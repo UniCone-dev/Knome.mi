@@ -1,0 +1,34 @@
+# Personal data -- never commit
+memory/
+slots/
+models/
+
+# Build artifacts
+llama.cpp/build/
+llama.cpp/tools/ui/node_modules/
+llama.cpp/tools/ui/dist/
+llama.cpp/tools/ui/.svelte-kit/
+llama.cpp/tools/ui/static/pwa-*.png
+llama.cpp/tools/ui/static/maskable-icon-*.png
+llama.cpp/tools/ui/static/apple-touch-icon-*.png
+llama.cpp/tools/ui/static/apple-splash-*.png
+llama.cpp/tools/ui/static/favicon*.ico
+llama.cpp/tools/ui/static/favicon*.svg
+
+# Python venv
+core-tools/venv/
+core-tools/__pycache__/
+**/__pycache__/
+*.pyc
+
+# OS/editor cruft
+.DS_Store
+*.swp
+
+# Runtime files and personal paths -- never commit
+image-models/
+.knome-state/
+image-server.log
+*.log
+stable-diffusion.cpp/
+.env

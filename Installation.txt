@@ -1,0 +1,1 @@
+Knome installation moved to docs/INSTALL.md  (quick version: ./install.sh  then  ./Knome-start.sh)

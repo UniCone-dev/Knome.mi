@@ -1,0 +1,238 @@
+/* ==========================================================================
+   Knome "Paper" (clean white) and "Slate" (clean dark).
+
+   Flat, calm, modern chat-app look. Built to be cheap:
+   - no backdrop-filter, no blur() filters, no box-shadow animation;
+   - every animation only moves transform / opacity (GPU-composited);
+   - the ambient background is ONE fixed layer with two pre-softened gradients.
+   Motion is still there: drifting ambient light, message pop-in, a focus line
+   under the input, a breathing send button, an animated headline, press feedback.
+   All colours come from the palette tokens in app.css (data-theme paper|slate).
+   ========================================================================== */
+
+:is(html[data-theme='paper'], html[data-theme='slate']) {
+	--k-radius-input: 1.25rem;
+	--k-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+	--k-spring: cubic-bezier(0.2, 0.9, 0.3, 1.25);
+	--k-tint-1: color-mix(in oklab, var(--primary) 14%, transparent);
+	--k-tint-2: color-mix(in oklab, var(--chart-3) 10%, transparent);
+}
+
+:is(html[data-theme='slate']) {
+	--k-tint-1: color-mix(in oklab, var(--primary) 12%, transparent);
+	--k-tint-2: color-mix(in oklab, var(--chart-3) 9%, transparent);
+}
+
+/* ---------- ambient light (one layer, transform-only animation) ---------- */
+
+:is(html[data-theme='paper'], html[data-theme='slate']) body::before {
+	content: '';
+	position: fixed;
+	inset: -20%;
+	z-index: -1;
+	pointer-events: none;
+	background:
+		radial-gradient(40% 35% at 18% 12%, var(--k-tint-1), transparent 70%),
+		radial-gradient(35% 40% at 85% 88%, var(--k-tint-2), transparent 70%);
+	will-change: transform;
+	animation: k-ambient 28s ease-in-out infinite alternate;
+}
+
+@keyframes k-ambient {
+	0% {
+		transform: translate3d(0, 0, 0) scale(1);
+	}
+	100% {
+		transform: translate3d(3%, 4%, 0) scale(1.08);
+	}
+}
+
+/* ---------- sidebar ---------- */
+
+:is(html[data-theme='paper'], html[data-theme='slate']) aside {
+	background: var(--sidebar);
+	border: 1px solid var(--sidebar-border);
+}
+
+:is(html[data-theme='paper'], html[data-theme='slate']) aside [data-slot='button'] {
+	transition:
+		transform 0.18s var(--k-ease-out),
+		background-color 0.18s ease;
+}
+
+:is(html[data-theme='paper'], html[data-theme='slate'])
+	aside
+	[data-slot='button']:hover:not(:disabled) {
+	transform: translateX(2px);
+}
+
+/* ---------- chat input: soft card, accent line that grows on focus ---------- */
+
+:is(html[data-theme='paper'], html[data-theme='slate']) [data-slot='input-area'] {
+	position: relative;
+	background: var(--card);
+	border: 1px solid var(--border);
+	border-radius: var(--k-radius-input);
+	box-shadow: 0 1px 2px color-mix(in oklab, var(--foreground) 6%, transparent);
+	transition:
+		border-color 0.25s ease,
+		box-shadow 0.25s ease;
+}
+
+:is(html[data-theme='paper'], html[data-theme='slate']) [data-slot='input-area']::after {
+	content: '';
+	position: absolute;
+	left: 8%;
+	right: 8%;
+	bottom: 0;
+	height: 2px;
+	border-radius: 2px;
+	background: linear-gradient(90deg, transparent, var(--primary), transparent);
+	transform: scaleX(0);
+	opacity: 0;
+	transition:
+		transform 0.45s var(--k-ease-out),
+		opacity 0.3s ease;
+	pointer-events: none;
+}
+
+:is(html[data-theme='paper'], html[data-theme='slate']) [data-slot='input-area']:focus-within {
+	border-color: color-mix(in oklab, var(--primary) 55%, var(--border));
+	box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 16%, transparent);
+}
+
+:is(html[data-theme='paper'], html[data-theme='slate'])
+	[data-slot='input-area']:focus-within::after {
+	transform: scaleX(1);
+	opacity: 1;
+}
+
+/* ---------- send button: solid accent, calm breathing halo ---------- */
+
+:is(html[data-theme='paper'], html[data-theme='slate'])
+	button[type='submit'][data-slot='button']:not(:disabled):not([class*='red-400']) {
+	position: relative;
+	background: var(--primary);
+	color: var(--primary-foreground);
+	border: none;
+	transition: transform 0.18s var(--k-spring);
+}
+
+:is(html[data-theme='paper'], html[data-theme='slate'])
+	button[type='submit'][data-slot='button']:not(:disabled):not([class*='red-400'])::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: var(--primary);
+	opacity: 0;
+	z-index: -1;
+	animation: k-halo 2.8s ease-out infinite;
+}
+
+:is(html[data-theme='paper'], html[data-theme='slate'])
+	button[type='submit'][data-slot='button']:not(:disabled):hover {
+	transform: translateY(-1px) scale(1.05);
+}
+
+@keyframes k-halo {
+	0% {
+		transform: scale(1);
+		opacity: 0.35;
+	}
+	70%,
+	100% {
+		transform: scale(1.7);
+		opacity: 0;
+	}
+}
+
+/* press feedback everywhere */
+:is(html[data-theme='paper'], html[data-theme='slate']) [data-slot='button']:active:not(:disabled) {
+	transform: scale(0.97);
+}
+
+/* ---------- messages ---------- */
+
+/* your message: a soft accent-tinted card; skipped when you chose a custom bubble colour */
+:is(html[data-theme='paper'], html[data-theme='slate'])
+	.chat-message-user-bubble:not([style*='background']) {
+	background: color-mix(in oklab, var(--primary) 11%, var(--background));
+	border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
+	animation: k-pop-lite 0.3s var(--k-ease-out) both;
+}
+
+:is(html[data-theme='paper'], html[data-theme='slate']) .chat-message-user-bubble[style*='background'],
+:is(html[data-theme='paper'], html[data-theme='slate']) .chat-message-ai-bubble {
+	animation: k-pop-lite 0.3s var(--k-ease-out) both;
+}
+
+:is(html[data-theme='paper'], html[data-theme='slate'])
+	.chat-message-ai-bubble:not([style*='background']) {
+	background: var(--card);
+	border: 1px solid var(--border);
+}
+
+:is(html[data-theme='paper'], html[data-theme='slate']) .agentic-turn {
+	animation: k-rise-lite 0.35s var(--k-ease-out) both;
+}
+
+@keyframes k-pop-lite {
+	from {
+		opacity: 0;
+		transform: translateY(6px) scale(0.985);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@keyframes k-rise-lite {
+	from {
+		opacity: 0;
+		transform: translateY(5px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+/* ---------- headline ---------- */
+
+:is(html[data-theme='paper'], html[data-theme='slate']) .text-gradient-knome {
+	background: linear-gradient(
+		100deg,
+		var(--primary),
+		color-mix(in oklab, var(--primary) 55%, var(--foreground)),
+		var(--primary)
+	);
+	background-size: 220% 100%;
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	color: transparent;
+	animation: k-sheen-text 9s linear infinite;
+}
+
+@keyframes k-sheen-text {
+	to {
+		background-position: -220% 0;
+	}
+}
+
+/* ---------- dialogs, menus, popovers ---------- */
+
+:is(html[data-theme='paper'], html[data-theme='slate']) [data-slot='dialog-content'],
+:is(html[data-theme='paper'], html[data-theme='slate']) [data-slot='sheet-content'],
+:is(html[data-theme='paper'], html[data-theme='slate']) [data-slot='popover-content'],
+:is(html[data-theme='paper'], html[data-theme='slate']) [data-slot='dropdown-menu-content'] {
+	background: var(--popover);
+	border: 1px solid var(--border);
+	box-shadow: 0 12px 40px -12px color-mix(in oklab, var(--foreground) 28%, transparent);
+}
+
+:is(html[data-theme='paper'], html[data-theme='slate']) [data-slot='dialog-content'] {
+	animation: k-pop-lite 0.28s var(--k-ease-out) both;
+}

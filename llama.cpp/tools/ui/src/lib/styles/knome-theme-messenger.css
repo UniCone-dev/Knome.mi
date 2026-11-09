@@ -1,0 +1,126 @@
+/* ==========================================================================
+   Knome "Messenger": a clean chat-app look.
+   White surfaces, one electric blue, blue-violet gradient bubbles for you, soft grey bubbles for
+   the AI, a rounded pill input. No background animation: only small, quick interactions.
+   ========================================================================== */
+
+html[data-theme='messenger'] {
+	--ms-grad: linear-gradient(135deg, oklch(0.62 0.19 252), oklch(0.55 0.24 300));
+	--ms-ai: oklch(0.955 0.004 260);
+}
+
+/* ---------- sidebar ---------- */
+html[data-theme='messenger'] aside {
+	background: var(--sidebar);
+	border: 1px solid var(--sidebar-border);
+}
+
+/* ---------- chat input: soft grey pill, blue ring on focus ---------- */
+html[data-theme='messenger'] [data-slot='input-area'] {
+	background: var(--ms-ai);
+	border: 1px solid transparent;
+	border-radius: 1.6rem;
+	transition:
+		background-color 0.2s ease,
+		border-color 0.2s ease,
+		box-shadow 0.2s ease;
+}
+
+html[data-theme='messenger'] [data-slot='input-area']:focus-within {
+	background: #fff;
+	border-color: color-mix(in oklab, var(--primary) 55%, transparent);
+	box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary) 14%, transparent);
+}
+
+/* ---------- send button: blue circle ---------- */
+html[data-theme='messenger']
+	button[type='submit'][data-slot='button']:not(:disabled):not([class*='red-400']) {
+	background: var(--ms-grad);
+	color: #fff;
+	border: none;
+	transition: transform 0.15s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+html[data-theme='messenger'] button[type='submit'][data-slot='button']:not(:disabled):hover {
+	transform: scale(1.08);
+}
+
+html[data-theme='messenger'] [data-slot='button']:active:not(:disabled) {
+	transform: scale(0.96);
+}
+
+/* ---------- bubbles ---------- */
+html[data-theme='messenger'] .chat-message-user-bubble:not([style*='background']) {
+	background: var(--ms-grad);
+	color: #fff;
+	--foreground: #fff;
+	border-radius: 1.25rem 1.25rem 0.3rem 1.25rem;
+	padding-left: 1rem;
+	padding-right: 1rem;
+	animation: ms-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+html[data-theme='messenger'] .chat-message-user-bubble[style*='background'] {
+	animation: ms-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+/* the AI's reply: a soft grey bubble (not nested if "AI messages in a bubble" is also on) */
+html[data-theme='messenger'] .chat-message-assistant .agentic-content {
+	width: fit-content;
+	max-width: 88%;
+	padding: 0.6rem 1rem;
+	background: var(--ms-ai);
+	border-radius: 1.25rem 1.25rem 1.25rem 0.3rem;
+	animation: ms-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+html[data-theme='messenger'] .chat-message-ai-bubble {
+	animation: ms-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+html[data-theme='messenger'] .chat-message-ai-bubble:not([style*='background']) {
+	background: var(--ms-ai);
+	border-radius: 1.25rem 1.25rem 1.25rem 0.3rem;
+}
+
+html[data-theme='messenger'] .chat-message-ai-bubble .agentic-content {
+	padding: 0;
+	background: none;
+	max-width: none;
+	border-radius: 0;
+}
+
+@keyframes ms-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px) scale(0.97);
+	}
+}
+
+/* ---------- headline ---------- */
+html[data-theme='messenger'] .text-gradient-knome {
+	background: var(--ms-grad);
+	-webkit-background-clip: text;
+	background-clip: text;
+	-webkit-text-fill-color: transparent;
+	color: transparent;
+}
+
+/* ---------- dialogs, menus ---------- */
+html[data-theme='messenger'] [data-slot='dialog-content'],
+html[data-theme='messenger'] [data-slot='sheet-content'],
+html[data-theme='messenger'] [data-slot='popover-content'],
+html[data-theme='messenger'] [data-slot='dropdown-menu-content'] {
+	background: var(--popover);
+	border: 1px solid var(--border);
+	border-radius: 1rem;
+	box-shadow: 0 16px 48px -16px oklch(0 0 0 / 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html[data-theme='messenger'] .chat-message-user-bubble,
+	html[data-theme='messenger'] .chat-message-assistant .agentic-content,
+	html[data-theme='messenger'] .chat-message-ai-bubble {
+		animation: none;
+	}
+}

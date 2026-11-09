@@ -1,0 +1,46 @@
+/* ==========================================================================
+   Knome Appearance: custom background (Settings > Appearance).
+   Only the BACKGROUND is replaced; the interface is untouched.
+   - the layer sits at z-index -100, below everything (including the theme blobs and the
+     character chat background, which are -1 / -10)
+   - while a wallpaper is on, the body must not paint an opaque colour over it
+   - the theme's own animated background can be hidden (default) so the two do not fight
+   ========================================================================== */
+
+.knome-appearance-layer {
+	position: fixed;
+	inset: 0;
+	z-index: -100;
+	overflow: hidden;
+	pointer-events: none;
+	background: var(--background);
+}
+
+.knome-appearance-frame {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	border: 0;
+	background: transparent;
+	pointer-events: none;
+	/* a different colour scheme than the page would make the iframe canvas opaque */
+	color-scheme: normal;
+}
+
+.knome-appearance-dim {
+	position: absolute;
+	inset: 0;
+	background: var(--background);
+}
+
+html:root[data-appearance] body {
+	background: transparent;
+}
+
+html:root[data-appearance-hide-theme] body::before,
+html:root[data-appearance-hide-theme] body::after,
+html:root[data-appearance-hide-theme]::after {
+	content: none !important;
+	display: none !important;
+}

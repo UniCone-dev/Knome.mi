@@ -1,0 +1,255 @@
+/* ==========================================================================
+   Knome "Nova": electric-blue neon on black.
+
+   Where Dark is soft violet glass, Nova is sharp and luminous: pure black page,
+   a faint dot grid, slow blue/cyan light behind everything, glowing 1px edges,
+   a light ring that circles the chat input, gradient neon bubbles and a pulsing
+   send button. Still no backdrop-filter: glow is drawn with gradients and
+   box-shadow that never animates, only transform/opacity/background-position do.
+   (The star particles on the start page come from AnimatedBackground.)
+   ========================================================================== */
+
+html[data-theme='nova'] {
+	--k-nova-1: oklch(0.72 0.17 250);
+	--k-nova-2: oklch(0.82 0.13 205);
+	--k-nova-3: oklch(0.7 0.19 300);
+	--k-nova-glow: oklch(0.72 0.17 250 / 0.45);
+}
+
+/* light behind everything */
+html[data-theme='nova'] body::before {
+	content: '';
+	position: fixed;
+	inset: -25%;
+	z-index: -1;
+	pointer-events: none;
+	background:
+		radial-gradient(38% 32% at 50% 6%, oklch(0.55 0.2 255 / 0.32), transparent 72%),
+		radial-gradient(30% 34% at 92% 92%, oklch(0.65 0.14 205 / 0.22), transparent 72%),
+		radial-gradient(26% 30% at 6% 78%, oklch(0.5 0.2 300 / 0.16), transparent 72%);
+	will-change: transform;
+	animation: k-nova-drift 22s ease-in-out infinite alternate;
+}
+
+/* faint dot grid, fading toward the edges (static, costs nothing) */
+html[data-theme='nova'] body::after {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background-image: radial-gradient(oklch(0.72 0.17 250 / 0.22) 1px, transparent 1.2px);
+	background-size: 30px 30px;
+	-webkit-mask-image: radial-gradient(ellipse at 50% 40%, #000 20%, transparent 72%);
+	mask-image: radial-gradient(ellipse at 50% 40%, #000 20%, transparent 72%);
+	opacity: 0.55;
+}
+
+@keyframes k-nova-drift {
+	0% {
+		transform: translate3d(0, 0, 0) scale(1);
+	}
+	100% {
+		transform: translate3d(-3%, 3%, 0) scale(1.1);
+	}
+}
+
+/* ---------- sidebar ---------- */
+
+html[data-theme='nova'] aside {
+	background: var(--sidebar);
+	border: 1px solid var(--sidebar-border);
+	box-shadow: 0 0 24px -10px var(--k-nova-glow);
+}
+
+html[data-theme='nova'] aside [data-slot='button'] {
+	transition:
+		transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+		background-color 0.2s ease;
+}
+
+html[data-theme='nova'] aside [data-slot='button']:hover:not(:disabled) {
+	transform: translateX(3px);
+}
+
+/* ---------- chat input: neon edge + circling light ---------- */
+
+html[data-theme='nova'] [data-slot='input-area'] {
+	position: relative;
+	background: color-mix(in oklab, var(--card) 92%, transparent);
+	border: 1px solid var(--border);
+	box-shadow:
+		0 0 0 1px oklch(0.72 0.17 250 / 0.06),
+		0 14px 40px -18px var(--k-nova-glow);
+	transition:
+		border-color 0.3s ease,
+		box-shadow 0.4s ease;
+}
+
+html[data-theme='nova'] [data-slot='input-area']::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	padding: 1.5px;
+	border-radius: inherit;
+	pointer-events: none;
+	background: conic-gradient(
+		from var(--k-angle),
+		transparent 0 18%,
+		var(--k-nova-1),
+		var(--k-nova-2),
+		var(--k-nova-3),
+		transparent 82% 100%
+	);
+	-webkit-mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask:
+		linear-gradient(#000 0 0) content-box exclude,
+		linear-gradient(#000 0 0);
+	opacity: 0.3;
+	transition: opacity 0.4s ease;
+	animation: k-spin 8s linear infinite;
+}
+
+html[data-theme='nova'] [data-slot='input-area']:focus-within {
+	border-color: oklch(0.72 0.17 250 / 0.55);
+	box-shadow:
+		0 0 0 1px oklch(0.72 0.17 250 / 0.2),
+		0 16px 48px -14px var(--k-nova-glow);
+}
+
+html[data-theme='nova'] [data-slot='input-area']:focus-within::before {
+	opacity: 1;
+	animation-duration: 4s;
+}
+
+/* ---------- send button ---------- */
+
+html[data-theme='nova']
+	button[type='submit'][data-slot='button']:not(:disabled):not([class*='red-400']) {
+	position: relative;
+	background: linear-gradient(135deg, var(--k-nova-1), var(--k-nova-2));
+	color: oklch(0.08 0.01 262);
+	border: none;
+	box-shadow: 0 0 18px -2px var(--k-nova-glow);
+	transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.25);
+}
+
+html[data-theme='nova']
+	button[type='submit'][data-slot='button']:not(:disabled):not([class*='red-400'])::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: linear-gradient(135deg, var(--k-nova-1), var(--k-nova-2));
+	opacity: 0;
+	z-index: -1;
+	animation: k-nova-pulse 2.4s ease-out infinite;
+}
+
+html[data-theme='nova'] button[type='submit'][data-slot='button']:not(:disabled):hover {
+	transform: translateY(-2px) scale(1.07);
+}
+
+@keyframes k-nova-pulse {
+	0% {
+		transform: scale(1);
+		opacity: 0.5;
+	}
+	75%,
+	100% {
+		transform: scale(1.9);
+		opacity: 0;
+	}
+}
+
+html[data-theme='nova'] [data-slot='button']:active:not(:disabled) {
+	transform: scale(0.96);
+}
+
+/* ---------- messages ---------- */
+
+html[data-theme='nova'] .chat-message-user-bubble:not([style*='background']) {
+	background: linear-gradient(120deg, oklch(0.5 0.2 258), oklch(0.58 0.16 225), oklch(0.5 0.2 258));
+	background-size: 220% 100%;
+	color: oklch(0.99 0.004 240);
+	--foreground: oklch(0.99 0.004 240);
+	border: 1px solid oklch(1 0 0 / 0.2);
+	box-shadow: 0 8px 26px -10px var(--k-nova-glow);
+	animation:
+		k-nova-in 0.38s cubic-bezier(0.2, 0.9, 0.3, 1.15) both,
+		k-sheen-bg 14s linear infinite;
+}
+
+html[data-theme='nova'] .chat-message-user-bubble[style*='background'] {
+	animation: k-nova-in 0.38s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+
+html[data-theme='nova'] .chat-message-ai-bubble {
+	animation: k-nova-in 0.38s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+
+html[data-theme='nova'] .chat-message-ai-bubble:not([style*='background']) {
+	background: color-mix(in oklab, var(--card) 94%, transparent);
+	border: 1px solid oklch(0.72 0.17 250 / 0.28);
+	box-shadow: 0 0 22px -12px var(--k-nova-glow);
+}
+
+html[data-theme='nova'] .agentic-turn {
+	animation: k-nova-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes k-nova-in {
+	from {
+		opacity: 0;
+		transform: translateY(10px) scale(0.97);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@keyframes k-sheen-bg {
+	to {
+		background-position: -220% 0;
+	}
+}
+
+/* ---------- headline ---------- */
+
+html[data-theme='nova'] .text-gradient-knome {
+	background: linear-gradient(
+		100deg,
+		var(--k-nova-1),
+		var(--k-nova-2),
+		oklch(0.98 0.01 220),
+		var(--k-nova-1)
+	);
+	background-size: 260% 100%;
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	color: transparent;
+	animation: k-sheen-bg 8s linear infinite;
+}
+
+/* ---------- dialogs, menus, popovers: neon edge ---------- */
+
+html[data-theme='nova'] [data-slot='dialog-content'],
+html[data-theme='nova'] [data-slot='sheet-content'],
+html[data-theme='nova'] [data-slot='popover-content'],
+html[data-theme='nova'] [data-slot='dropdown-menu-content'] {
+	background: var(--popover);
+	border: 1px solid oklch(0.72 0.17 250 / 0.32);
+	box-shadow:
+		0 0 0 1px oklch(0.72 0.17 250 / 0.08),
+		0 18px 60px -16px var(--k-nova-glow);
+}
+
+html[data-theme='nova'] [data-slot='dialog-content'] {
+	animation: k-nova-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
