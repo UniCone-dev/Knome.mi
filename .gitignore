@@ -1,7 +1,7 @@
 # Personal data -- never commit
-memory/
-slots/
-models/
+/memory/
+/slots/
+/models/
 
 # Build artifacts
 llama.cpp/build/
@@ -26,8 +26,8 @@ core-tools/__pycache__/
 *.swp
 
 # Runtime files and personal paths -- never commit
-image-models/
-.knome-state/
+/image-models/
+/.knome-state/
 image-server.log
 *.log
 .env
