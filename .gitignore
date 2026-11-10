@@ -30,5 +30,5 @@ image-models/
 .knome-state/
 image-server.log
 *.log
-stable-diffusion.cpp/
 .env
+stable-diffusion.cpp/build/
