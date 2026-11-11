@@ -75,8 +75,8 @@ export const SETTINGS_REGISTRY: SettingsSectionEntry[] = [
 		icon: SlidersVertical,
 		settings: [
 			{
-				defaultValue: ColorMode.SYSTEM,
-				help: 'Choose the color theme. System follows your device. Light and Dark (the new Sage look): flat, calm, mint accent, very light on the GPU. Paper and Slate: clean, flat and very light on the GPU, in the warm palette of modern AI chat apps (Paper = white, Slate = dark). Nova: electric-blue neon on black with a glowing, animated interface. Washi: Japanese paper, ink and falling sakura petals (animated). Messenger: a clean chat-app look with blue-violet bubbles. Custom CSS: write your own theme in the box below (a documented starter is filled in for you).',
+				defaultValue: ColorMode.PASTEL,
+				help: 'Choose the color theme. Pastel OS (default): soft Japanese desktop, sky-lilac-pink gradient, cream rounded windows, mint and sky-blue accents. System follows your device. Light and Dark (the new Sage look): flat, calm, mint accent, very light on the GPU. Paper and Slate: clean, flat and very light on the GPU, in the warm palette of modern AI chat apps (Paper = white, Slate = dark). Nova: electric-blue neon on black with a glowing, animated interface. Washi: Japanese paper, ink and falling sakura petals (animated). Messenger: a clean chat-app look with blue-violet bubbles. Custom CSS: write your own theme in the box below (a documented starter is filled in for you).',
 				minimal: true,
 				key: SETTINGS_KEYS.THEME,
 				label: 'Theme',
@@ -89,6 +89,7 @@ export const SETTINGS_REGISTRY: SettingsSectionEntry[] = [
 					{ icon: Sparkles, label: 'Nova (neon)', value: ColorMode.NOVA },
 					{ icon: Flower2, label: 'Washi (Japanese art, animated)', value: ColorMode.JAPAN },
 					{ icon: MessageCircle, label: 'Messenger (chat-app look)', value: ColorMode.MESSENGER },
+					{ icon: Flower2, label: 'Pastel OS (soft Japanese desktop)', value: ColorMode.PASTEL },
 					{ icon: Code, label: 'Custom CSS (write your own)', value: ColorMode.CUSTOM }
 				],
 				type: SettingsFieldType.SELECT

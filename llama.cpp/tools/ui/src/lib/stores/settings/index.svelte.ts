@@ -59,6 +59,7 @@ export function applyColorMode(mode: ColorMode): void {
 		case ColorMode.PAPER:
 		case ColorMode.JAPAN:
 		case ColorMode.MESSENGER:
+		case ColorMode.PASTEL:
 			// light-based themes
 			setMode(ColorMode.LIGHT);
 			setTheme(mode);

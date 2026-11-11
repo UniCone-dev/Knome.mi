@@ -83,16 +83,9 @@ export class ModelsService {
 	static async load(
 		modelId: string,
 		extraArgs?: string[],
-		mmproj?: string,
-		ctxSize?: number
+		mmproj?: string
 	): Promise<ApiRouterModelsLoadResponse> {
-		const payload: { model: string; extra_args?: string[]; mmproj?: string; ctx_size?: number } = {
-			model: modelId
-		};
-
-		if (ctxSize !== undefined) {
-			payload.ctx_size = ctxSize;
-		}
+		const payload: { model: string; extra_args?: string[]; mmproj?: string } = { model: modelId };
 
 		if (mmproj) {
 			payload.mmproj = mmproj;

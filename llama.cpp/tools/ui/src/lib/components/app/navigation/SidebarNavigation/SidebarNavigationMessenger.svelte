@@ -151,7 +151,8 @@
 		{ label: 'Dark', value: ColorMode.DARK },
 		{ label: 'Paper', value: ColorMode.PAPER },
 		{ label: 'Slate', value: ColorMode.SLATE },
-		{ label: 'Nova', value: ColorMode.NOVA }
+		{ label: 'Nova', value: ColorMode.NOVA },
+		{ label: 'Pastel', value: ColorMode.PASTEL }
 	];
 
 	const currentTheme = $derived(

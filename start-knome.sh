@@ -65,13 +65,12 @@ fi
 # Settings chosen during install (./install.sh --settings changes them any time):
 #   KNOME_CTX   auto | 4096 | 8192 | 16384 | 32768 | 65536 | 131072     (auto = fit to the free GPU memory)
 #   KNOME_NGL   auto | all | <number of layers on the GPU>
-#   KNOME_KV    q4_0 | q8_0 | f16                                       (KV-cache precision; q4_0 uses least memory)
 #   KNOME_PORT  8080
 # Environment variables still win:  LLM_CTX=8192 LLM_NGL=20 LLM_PORT=8081 ./start-knome.sh
 [ -f "$SCRIPT_DIR/.knome-state/settings.env" ] && . "$SCRIPT_DIR/.knome-state/settings.env"
 NGL="${LLM_NGL:-${KNOME_NGL:-auto}}"
 CTX="${LLM_CTX:-${KNOME_CTX:-auto}}"
-KV="${KNOME_KV:-q4_0}"
+KV="${KNOME_KV:-}"   # empty = llama.cpp default (set KNOME_KV=q8_0 or q4_0 yourself to save memory)
 PORT="${LLM_PORT:-${KNOME_PORT:-8080}}"
 
 if [ ! -x "$SCRIPT_DIR/llama.cpp/build/bin/llama-server" ]; then
@@ -263,8 +262,8 @@ echo "Knome is starting, please wait..."
 COMMON_ARGS=()
 case "$NGL" in auto|"") ;; all) COMMON_ARGS+=(-ngl 999) ;; *) COMMON_ARGS+=(-ngl "$NGL") ;; esac
 case "$CTX" in auto|"") ;; *) COMMON_ARGS+=(-c "$CTX") ;; esac
+[ -n "$KV" ] && COMMON_ARGS+=(--cache-type-k "$KV" --cache-type-v "$KV")
 COMMON_ARGS+=(
-    --cache-type-k "$KV" --cache-type-v "$KV"
     --host 127.0.0.1 --port "$PORT"
     --tools all --jinja
     -ag

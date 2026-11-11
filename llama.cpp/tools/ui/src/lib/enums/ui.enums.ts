@@ -6,6 +6,7 @@ export enum ColorMode {
 	SLATE = 'slate',
 	JAPAN = 'japan',
 	MESSENGER = 'messenger',
+	PASTEL = 'pastel',
 	CUSTOM = 'custom',
 	SYSTEM = 'system'
 }

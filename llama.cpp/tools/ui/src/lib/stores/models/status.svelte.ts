@@ -8,7 +8,6 @@
  */
 
 import { mmprojStore } from '$lib/stores/mmproj.svelte';
-import { ctxSizeStore } from '$lib/stores/ctxsize.svelte';
 import { ServerModelsSseEventType, ServerModelStatus } from '$lib/enums';
 import { ModelsService } from '$lib/services/models.service';
 import type { ModelPropsManager } from '$lib/stores/models/props.svelte';
@@ -78,12 +77,7 @@ export class ModelStatusManager {
 		reachedLoaded.catch(() => {});
 
 		try {
-			await ModelsService.load(
-				modelId,
-				undefined,
-				mmprojStore.get(modelId),
-				ctxSizeStore.forServer(modelId)
-			);
+			await ModelsService.load(modelId, undefined, mmprojStore.get(modelId));
 			await reachedLoaded;
 			toast.success(`Model loaded: ${this.host.toDisplayName(modelId)}`);
 		} catch (error) {
@@ -91,7 +85,7 @@ export class ModelStatusManager {
 			this.host.error = error instanceof Error ? error.message : 'Failed to load model';
 			toast.error(`Failed to load model: ${this.host.toDisplayName(modelId)}`, {
 				description:
-					'Not enough memory? Open Models, set Context to Auto or a smaller size, then press Load again.'
+					'Not enough memory? Close other programs, or run ./Knome-start.sh --settings and choose a smaller context size.'
 			});
 
 			throw error;

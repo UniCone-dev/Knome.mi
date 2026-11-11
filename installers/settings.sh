@@ -3,7 +3,6 @@
 # (sourced by ./install.sh; ./Knome-start.sh --settings or ./install.sh --settings asks again any time)
 #   KNOME_CTX   auto | 4096 | 8192 | 16384 | 32768 | 65536 | 131072   how much text the AI remembers per chat
 #   KNOME_NGL   auto | all | <n>       how many model layers go to the GPU
-#   KNOME_KV    q4_0 | q8_0 | f16      KV-cache precision (q4_0 = least memory)
 #   KNOME_PORT  8080                   web address http://127.0.0.1:PORT
 
 vram_mb() {   # best-effort GPU memory in MB, empty when unknown
@@ -37,9 +36,9 @@ choose() {
 
 ask_settings() {   # ask_settings <backend>
     local backend="$1" file="$STATE_DIR/settings.env"
-    local ctx=auto ngl=auto kv=q4_0 port=8080 vram hint=""
+    local ctx=auto ngl=auto port=8080 vram hint=""
     # keep earlier answers as defaults
-    [ -f "$file" ] && . "$file" && ctx="${KNOME_CTX:-auto}" ngl="${KNOME_NGL:-auto}" kv="${KNOME_KV:-q4_0}" port="${KNOME_PORT:-8080}"
+    [ -f "$file" ] && . "$file" && ctx="${KNOME_CTX:-auto}" ngl="${KNOME_NGL:-auto}" port="${KNOME_PORT:-8080}"
 
     if [ "${INTERACTIVE:-0}" = "1" ]; then
         printf '\n%s==> Settings%s   %s(press Enter to accept the recommended answer; change later with ./install.sh --settings)%s\n' "$BOLD$GREEN" "$RESET" "$DIM" "$RESET"
@@ -54,7 +53,7 @@ ask_settings() {   # ask_settings <backend>
             1) ctx=auto ;; 2) ctx=8192 ;; 3) ctx=16384 ;; 4) ctx=32768 ;; 5) ctx=65536 ;; 6) ctx=131072 ;;
             7) read -r -p "    Context tokens (e.g. 24576): " ctx; case "$ctx" in ''|*[!0-9]*) ctx=auto ;; esac ;;
         esac
-        info "(you can change the context for each model later: Models window > Context)"
+        info "(change it any time:  ./Knome-start.sh --settings )"
 
         if [ "$backend" != "cpu" ]; then
             choose "How many model layers go to the GPU?" 1 \
@@ -67,10 +66,6 @@ ask_settings() {   # ask_settings <backend>
             ngl=0
         fi
 
-        choose "Memory used by the chat history (KV cache). Smaller = more context fits." 1 \
-            "q4_0 - smallest, a little less exact (recommended)" "q8_0 - half the size of f16, almost lossless" "f16 - biggest, best quality"
-        case "$CHOICE" in 1) kv=q4_0 ;; 2) kv=q8_0 ;; 3) kv=f16 ;; esac
-
         read -r -p "    Web port [$port]: " _p
         case "${_p:-$port}" in ''|*[!0-9]*) ;; *) port="${_p:-$port}" ;; esac
     else
@@ -81,8 +76,7 @@ ask_settings() {   # ask_settings <backend>
 # Knome settings. Change with ./install.sh --settings  (or edit this file).
 KNOME_CTX=$ctx
 KNOME_NGL=$ngl
-KNOME_KV=$kv
 KNOME_PORT=$port
 EOT
-    good "Settings saved: context=$ctx, GPU layers=$ngl, KV cache=$kv, port=$port"
+    good "Settings saved: context=$ctx, GPU layers=$ngl, port=$port"
 }

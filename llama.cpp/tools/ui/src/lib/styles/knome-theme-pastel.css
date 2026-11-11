@@ -1,0 +1,251 @@
+/* ==========================================================================
+   Knome "Pastel OS": a soft Japanese desktop look.
+   Sky-to-lilac-to-pink gradient desktop, cream rounded windows with a mint title strip,
+   round red close button, soft gradient app-icon tiles, sky-blue pill buttons, a floating
+   frosted dock feel. Flat and cheap on the GPU: no animation loops, blur only on small popups.
+   Written as its own theme: it does not change any other theme.
+   ========================================================================== */
+
+html[data-theme='pastel'] {
+	--ps-sky: #6cb8ec;
+	--ps-sky-deep: #4a98d8;
+	--ps-mint: #a8e6cb;
+	--ps-mint-deep: #86d8b4;
+	--ps-pink: #f8c8df;
+	--ps-lilac: #d3cdf2;
+	--ps-red: #ef5350;
+	--ps-yellow: #fbc531;
+	--ps-ease: cubic-bezier(0.22, 1, 0.36, 1);
+	--ps-shadow: 0 10px 30px -14px rgb(120 100 170 / 0.45);
+	font-family:
+		'Hiragino Maru Gothic ProN', 'Zen Maru Gothic', 'M PLUS Rounded 1c', 'Yu Gothic UI', 'Noto Sans JP',
+		'Nunito', ui-rounded, system-ui, sans-serif;
+	background-color: #d9d3f1;
+	background-image:
+		radial-gradient(60rem 38rem at 8% 6%, rgb(170 220 238 / 0.9), transparent 62%),
+		radial-gradient(54rem 40rem at 96% 96%, rgb(249 200 226 / 0.95), transparent 60%),
+		linear-gradient(135deg, #bfe3ee 0%, #d6d0f0 48%, #f7cae2 100%);
+	background-attachment: fixed;
+}
+
+html[data-theme='pastel'] body {
+	background: transparent;
+}
+
+/* ---------- sidebar: frosted cream panel ---------- */
+html[data-theme='pastel'] aside {
+	background: rgb(255 252 253 / 0.74);
+	border: 1px solid rgb(255 255 255 / 0.8);
+	box-shadow: var(--ps-shadow);
+}
+
+html[data-theme='pastel'] aside [data-slot='button'] {
+	border-radius: 0.95rem;
+	transition:
+		transform 0.18s var(--ps-ease),
+		background-color 0.18s ease;
+}
+
+html[data-theme='pastel'] aside [data-slot='button']:hover:not(:disabled) {
+	background: rgb(168 230 203 / 0.38);
+	transform: translateX(2px);
+}
+
+/* nav icons become soft rounded "app icon" tiles, each a different colour like the desktop icons */
+html[data-theme='pastel'] aside [data-slot='button'] > span > svg:first-child {
+	box-sizing: content-box;
+	width: 16px;
+	height: 16px;
+	padding: 5px;
+	border-radius: 11px;
+	color: #fff;
+	background: linear-gradient(160deg, #ffd27a, #f6a54a);
+	box-shadow:
+		inset 0 1px 0 rgb(255 255 255 / 0.55),
+		0 4px 8px -4px rgb(120 90 40 / 0.5);
+}
+
+html[data-theme='pastel'] aside :nth-child(6n + 2) > [data-slot='button'] > span > svg:first-child {
+	background: linear-gradient(160deg, #b9a6f2, #8d78dc);
+}
+
+html[data-theme='pastel'] aside :nth-child(6n + 3) > [data-slot='button'] > span > svg:first-child {
+	background: linear-gradient(160deg, #8fd3f4, #4aa3df);
+}
+
+html[data-theme='pastel'] aside :nth-child(6n + 4) > [data-slot='button'] > span > svg:first-child {
+	background: linear-gradient(160deg, #8fe0c6, #3fb79a);
+}
+
+html[data-theme='pastel'] aside :nth-child(6n + 5) > [data-slot='button'] > span > svg:first-child {
+	background: linear-gradient(160deg, #ffb3b8, #f2777f);
+}
+
+html[data-theme='pastel'] aside :nth-child(6n + 6) > [data-slot='button'] > span > svg:first-child {
+	background: linear-gradient(160deg, #b9c0c8, #8d96a0);
+}
+
+/* ---------- top bar = the window title strip: mint ---------- */
+html[data-theme='pastel'] .kn-topbar {
+	background: linear-gradient(180deg, rgb(190 238 217 / 0.96), rgb(160 224 196 / 0.96));
+	border-bottom: 1px solid rgb(255 255 255 / 0.7);
+	border-radius: 0 0 1.25rem 1.25rem;
+	box-shadow: 0 10px 24px -16px rgb(60 150 120 / 0.55);
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+}
+
+/* ---------- buttons: soft sky-blue pills ---------- */
+html[data-theme='pastel'] [data-slot='button'][class*='bg-primary'] {
+	background: linear-gradient(180deg, var(--ps-sky), var(--ps-sky-deep));
+	color: #fff;
+	border: none;
+	border-radius: 999px;
+	box-shadow:
+		inset 0 1px 0 rgb(255 255 255 / 0.5),
+		0 6px 14px -8px var(--ps-sky-deep);
+}
+
+html[data-theme='pastel'] [data-slot='button']:active:not(:disabled) {
+	transform: scale(0.97);
+}
+
+/* ---------- chat input: white pill, sky glow on focus ---------- */
+html[data-theme='pastel'] [data-slot='input-area'] {
+	background: rgb(255 255 255 / 0.94);
+	border: 1px solid rgb(255 255 255 / 0.9);
+	border-radius: 1.5rem;
+	box-shadow: var(--ps-shadow);
+	transition:
+		box-shadow 0.25s ease,
+		border-color 0.25s ease;
+}
+
+html[data-theme='pastel'] [data-slot='input-area']:focus-within {
+	border-color: color-mix(in oklab, var(--ps-sky) 60%, transparent);
+	box-shadow:
+		0 0 0 4px color-mix(in oklab, var(--ps-sky) 20%, transparent),
+		var(--ps-shadow);
+}
+
+html[data-theme='pastel']
+	button[type='submit'][data-slot='button']:not(:disabled):not([class*='red-400']) {
+	background: linear-gradient(180deg, var(--ps-sky), var(--ps-sky-deep));
+	color: #fff;
+	border: none;
+	transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+html[data-theme='pastel'] button[type='submit'][data-slot='button']:not(:disabled):hover {
+	transform: scale(1.07);
+}
+
+/* ---------- messages ---------- */
+html[data-theme='pastel'] .chat-message-user-bubble:not([style*='background']) {
+	background: linear-gradient(180deg, var(--ps-sky), var(--ps-sky-deep));
+	color: #fff;
+	--foreground: #fff;
+	border-radius: 1.3rem 1.3rem 0.35rem 1.3rem;
+	box-shadow: 0 8px 18px -10px var(--ps-sky-deep);
+	animation: ps-in 0.28s var(--ps-ease) both;
+}
+
+html[data-theme='pastel'] .chat-message-ai-bubble:not([style*='background']) {
+	background: rgb(255 253 254 / 0.92);
+	border: 1px solid rgb(255 255 255 / 0.9);
+	border-radius: 1.3rem 1.3rem 1.3rem 0.35rem;
+	box-shadow: var(--ps-shadow);
+	animation: ps-in 0.28s var(--ps-ease) both;
+}
+
+html[data-theme='pastel'] .agentic-turn {
+	animation: ps-in 0.3s var(--ps-ease) both;
+}
+
+@keyframes ps-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px) scale(0.99);
+	}
+}
+
+/* ---------- headline ---------- */
+html[data-theme='pastel'] .text-gradient-knome {
+	background-image: linear-gradient(90deg, var(--ps-sky-deep), #9a86e4 55%, #f08ab9);
+	-webkit-background-clip: text;
+	background-clip: text;
+	-webkit-text-fill-color: transparent;
+}
+
+/* ---------- dialogs = soft windows: mint strip on top, round red close button ---------- */
+html[data-theme='pastel'] [data-slot='dialog-content'],
+html[data-theme='pastel'] [data-slot='sheet-content'] {
+	background: #fffafc;
+	border: 1px solid #fff;
+	border-radius: 1.6rem;
+	box-shadow: 0 24px 60px -20px rgb(110 90 170 / 0.5);
+	overflow: hidden;
+	animation: ps-in 0.28s var(--ps-ease) both;
+}
+
+html[data-theme='pastel'] [data-slot='dialog-content']::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	height: 9px;
+	background: linear-gradient(90deg, var(--ps-mint), var(--ps-sky), var(--ps-pink));
+	pointer-events: none;
+}
+
+html[data-theme='pastel'] [data-slot='dialog-content'] > button.absolute {
+	top: 0.85rem;
+	right: 0.9rem;
+	width: 1.65rem;
+	height: 1.65rem;
+	display: grid;
+	place-items: center;
+	border-radius: 999px;
+	background: var(--ps-red);
+	color: #fff;
+	opacity: 1;
+	box-shadow:
+		inset 0 1px 0 rgb(255 255 255 / 0.5),
+		0 4px 8px -4px var(--ps-red);
+	transition: transform 0.15s var(--ps-ease);
+}
+
+html[data-theme='pastel'] [data-slot='dialog-content'] > button.absolute:hover {
+	transform: scale(1.12);
+}
+
+html[data-theme='pastel'] [data-slot='popover-content'],
+html[data-theme='pastel'] [data-slot='dropdown-menu-content'],
+html[data-theme='pastel'] [data-slot='select-content'] {
+	background: rgb(255 252 253 / 0.94);
+	border: 1px solid #fff;
+	border-radius: 1.1rem;
+	box-shadow: 0 16px 40px -16px rgb(110 90 170 / 0.5);
+	-webkit-backdrop-filter: blur(10px);
+	backdrop-filter: blur(10px);
+}
+
+/* ---------- inputs ---------- */
+html[data-theme='pastel'] input:not([type='checkbox']):not([type='radio']):not([type='range']),
+html[data-theme='pastel'] select,
+html[data-theme='pastel'] textarea {
+	border-radius: 0.9rem;
+}
+
+/* ---------- soft scrollbars ---------- */
+html[data-theme='pastel'] * {
+	scrollbar-width: thin;
+	scrollbar-color: rgb(168 150 220 / 0.55) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html[data-theme='pastel'] * {
+		animation: none !important;
+	}
+}

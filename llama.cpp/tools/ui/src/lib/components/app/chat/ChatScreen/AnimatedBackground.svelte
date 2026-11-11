@@ -42,6 +42,7 @@
 			theme === 'slate' ||
 			theme === 'japan' ||
 			theme === 'messenger' ||
+			theme === 'pastel' ||
 			theme === 'custom'
 		);
 	}
