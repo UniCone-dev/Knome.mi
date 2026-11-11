@@ -1019,6 +1019,21 @@ void server_models::load(const std::string & name, const load_options & opts) {
             }
         }
 
+        // user-chosen context size (Knome Models window). The GPU layer count is dropped as well so
+        // llama.cpp can fit the model + context into the memory that is really free instead of failing to load.
+        if (opts.ctx_size >= 0) {
+            try {
+                inst.meta.preset.unset_option("LLAMA_ARG_N_GPU_LAYERS");
+                if (opts.ctx_size == 0) {
+                    inst.meta.preset.unset_option("LLAMA_ARG_CTX_SIZE");
+                } else {
+                    inst.meta.preset.set_option(ctx_preset, "LLAMA_ARG_CTX_SIZE", std::to_string(opts.ctx_size));
+                }
+            } catch (const std::exception & e) {
+                SRV_WRN("could not apply context size override: %s\n", e.what());
+            }
+        }
+
         inst.meta.update_args(ctx_preset, bin_path); // render args
 
         std::vector<std::string> child_args = inst.meta.args; // copy
@@ -1978,6 +1993,14 @@ void server_models_routes::init_routes() {
             }
         }
         load_opts.mmproj = mmproj;
+        {
+            int ctx_size = json_value(body, "ctx_size", -1);
+            if (ctx_size < -1 || ctx_size > 4194304) {
+                res_err(res, format_error_response("ctx_size must be 0 (automatic) or a token count", ERROR_TYPE_INVALID_REQUEST));
+                return res;
+            }
+            load_opts.ctx_size = ctx_size;
+        }
         models.load(meta->name, load_opts);
         res_ok(res, {{"success", true}});
         return res;

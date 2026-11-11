@@ -11,6 +11,7 @@
 #    and opens your browser. Ctrl+C stops everything.
 #
 #  Options:  --rebuild | --choose-backend | --backend X | --no-image   (passed to install.sh)
+#            --settings     change context size / GPU layers / KV cache / port, then stop
 #            --no-browser   do not open the browser
 # ============================================================================
 if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi
@@ -24,6 +25,7 @@ PASS=()
 for a in "$@"; do
     case "$a" in
         --rebuild|--choose-backend|--backend|--backend=*|--no-image|--yes|-y) NEEDS_SETUP=1; PASS+=("$a") ;;
+        --settings) "$SCRIPT_DIR/install.sh" --settings; exit $? ;;
         --no-browser) export KNOME_NO_BROWSER=1 ;;
         -h|--help) sed -n '2,16p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) PASS+=("$a") ;;   # values of --backend X

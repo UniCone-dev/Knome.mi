@@ -5,6 +5,7 @@
 	import { ServerModelStatus } from '$lib/enums';
 	import { modelsStore, serverStore } from '$lib/stores';
 	import { mmprojStore } from '$lib/stores/mmproj.svelte';
+	import { CTX_CHOICES, ctxSizeStore } from '$lib/stores/ctxsize.svelte';
 	import { imageGenStore } from '$lib/stores/imagegen.svelte';
 	import { uiStore } from '$lib/stores/ui.svelte';
 
@@ -80,6 +81,21 @@
 								· {visionLabel(m)}
 							</p>
 						</div>
+
+						<select
+							class="h-8 max-w-[9.5rem] truncate rounded-lg border border-input bg-background px-2 pr-6 text-xs"
+							data-testid="model-ctx-{m.id}"
+							disabled={busy || on}
+							onchange={(e) => ctxSizeStore.set(m.id, e.currentTarget.value)}
+							title={on
+								? 'Unload the model to change its context size'
+								: 'Context size for this model. If loading fails (not enough memory) choose Auto or a smaller size.'}
+							value={ctxSizeStore.get(m.id)}
+						>
+							{#each CTX_CHOICES as c (c.value)}
+								<option value={c.value}>Context: {c.label}</option>
+							{/each}
+						</select>
 
 						<Button
 							class="h-8 gap-1.5 rounded-lg px-2.5 text-xs"

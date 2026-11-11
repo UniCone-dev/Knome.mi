@@ -258,6 +258,9 @@ public:
         // vision projector override chosen by the user (validated by the caller):
         // empty = keep the preset / auto-detected one, "none" = run without vision, otherwise a .gguf path
         std::string mmproj;
+        // context size chosen by the user (Knome Models window): -1 = keep the preset, 0 = automatic
+        // (llama.cpp fits it to the free memory), > 0 = that many tokens
+        int ctx_size = -1;
     };
 
     // load and unload model instances

@@ -62,10 +62,17 @@ if [ ${#UNIT_NAMES[@]} -eq 0 ]; then
     exit 1
 fi
 
-# Overridable via env vars: LLM_NGL=... LLM_CTX=... LLM_PORT=... ./start-knome.sh
-NGL="${LLM_NGL:-999}"
-CTX="${LLM_CTX:-131072}"
-PORT="${LLM_PORT:-8080}"
+# Settings chosen during install (./install.sh --settings changes them any time):
+#   KNOME_CTX   auto | 4096 | 8192 | 16384 | 32768 | 65536 | 131072     (auto = fit to the free GPU memory)
+#   KNOME_NGL   auto | all | <number of layers on the GPU>
+#   KNOME_KV    q4_0 | q8_0 | f16                                       (KV-cache precision; q4_0 uses least memory)
+#   KNOME_PORT  8080
+# Environment variables still win:  LLM_CTX=8192 LLM_NGL=20 LLM_PORT=8081 ./start-knome.sh
+[ -f "$SCRIPT_DIR/.knome-state/settings.env" ] && . "$SCRIPT_DIR/.knome-state/settings.env"
+NGL="${LLM_NGL:-${KNOME_NGL:-auto}}"
+CTX="${LLM_CTX:-${KNOME_CTX:-auto}}"
+KV="${KNOME_KV:-q4_0}"
+PORT="${LLM_PORT:-${KNOME_PORT:-8080}}"
 
 if [ ! -x "$SCRIPT_DIR/llama.cpp/build/bin/llama-server" ]; then
     echo "Error: llama-server binary not found/built at $SCRIPT_DIR/llama.cpp/build/bin/llama-server"
@@ -251,10 +258,13 @@ printf '%s  Stop:%s            Ctrl+C\n\n' "$DIM" "$RESET"
 echo "Knome is starting, please wait..."
 [ "${KNOME_NO_BROWSER:-0}" = "1" ] || ( sleep 3 && xdg-open "http://127.0.0.1:$PORT" >/dev/null 2>&1 & )
 
-COMMON_ARGS=(
-    -ngl "$NGL"
-    -c "$CTX"
-    --cache-type-k q4_0 --cache-type-v q4_0
+# "auto" = leave the option out, so llama.cpp fits layers / context into the free memory by itself
+# (an explicit -c 131072 -ngl 999 cannot be fitted and fails to load on small GPUs).
+COMMON_ARGS=()
+case "$NGL" in auto|"") ;; all) COMMON_ARGS+=(-ngl 999) ;; *) COMMON_ARGS+=(-ngl "$NGL") ;; esac
+case "$CTX" in auto|"") ;; *) COMMON_ARGS+=(-c "$CTX") ;; esac
+COMMON_ARGS+=(
+    --cache-type-k "$KV" --cache-type-v "$KV"
     --host 127.0.0.1 --port "$PORT"
     --tools all --jinja
     -ag
