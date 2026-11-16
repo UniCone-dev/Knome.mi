@@ -66,12 +66,14 @@ fi
 #   KNOME_CTX   auto | 4096 | 8192 | 16384 | 32768 | 65536 | 131072     (auto = fit to the free GPU memory)
 #   KNOME_NGL   auto | all | <number of layers on the GPU>
 #   KNOME_PORT  8080
+#   KNOME_SYSTEM_TOOLS  0 | 1    1 = the AI may open apps, change settings, install apps ... (the UI asks before EVERY action)
 # Environment variables still win:  LLM_CTX=8192 LLM_NGL=20 LLM_PORT=8081 ./start-knome.sh
 [ -f "$SCRIPT_DIR/.knome-state/settings.env" ] && . "$SCRIPT_DIR/.knome-state/settings.env"
 NGL="${LLM_NGL:-${KNOME_NGL:-auto}}"
 CTX="${LLM_CTX:-${KNOME_CTX:-auto}}"
 KV="${KNOME_KV:-}"   # empty = llama.cpp default (set KNOME_KV=q8_0 or q4_0 yourself to save memory)
 PORT="${LLM_PORT:-${KNOME_PORT:-8080}}"
+SYSTEM_TOOLS="${KNOME_SYSTEM_TOOLS:-0}"
 
 if [ ! -x "$SCRIPT_DIR/llama.cpp/build/bin/llama-server" ]; then
     echo "Error: llama-server binary not found/built at $SCRIPT_DIR/llama.cpp/build/bin/llama-server"
@@ -137,7 +139,8 @@ MCP_SERVERS_JSON=$(cat <<JSON
       "env": {
         "KNOME_ROOT": "$SCRIPT_DIR",
         "LLAMA_SERVER_URL": "http://127.0.0.1:$PORT",
-        "TEXT_MODEL_NAME": "$TEXT_MODEL_NAME"
+        "TEXT_MODEL_NAME": "$TEXT_MODEL_NAME",
+        "KNOME_SYSTEM_TOOLS": "$SYSTEM_TOOLS"
       }
     }
   }

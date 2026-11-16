@@ -49,6 +49,7 @@
 					alt={heroCharacter.name}
 					avatarKind={heroCharacter.avatarKind}
 					avatarUrl={heroCharacter.avatarUrl}
+					living
 					shape={charactersStore.avatarShape}
 					size={88}
 				/>

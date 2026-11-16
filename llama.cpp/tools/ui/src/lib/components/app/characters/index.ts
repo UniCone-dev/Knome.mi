@@ -9,3 +9,9 @@
 
 export { default as CharacterEditor } from './CharacterEditor.svelte';
 export { default as CharacterManager } from './CharacterManager.svelte';
+export { default as CharacterEmotionsEditor } from './CharacterEmotionsEditor.svelte';
+export { default as EmotionStage } from './EmotionStage.svelte';
+export { default as LivingStage } from './LivingStage.svelte';
+export { default as LivingDriver } from './LivingDriver.svelte';
+export { default as LivingView } from './LivingView.svelte';
+export { default as LivingStill } from './LivingStill.svelte';

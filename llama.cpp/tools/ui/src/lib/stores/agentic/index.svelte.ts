@@ -10,7 +10,7 @@
  * the permission/continue/steering gates owned by {@link AgenticGates}.
  */
 
-import { DEFAULT_AGENTIC_CONFIG, NEWLINE } from '$lib/constants';
+import { DEFAULT_AGENTIC_CONFIG, NEWLINE, isSystemControlTool } from '$lib/constants';
 import {
 	AUDIO_MIME_TO_EXTENSION,
 	DATA_URI_BASE64_REGEX,
@@ -35,6 +35,7 @@ import { SandboxService } from '$lib/services/sandbox.service';
 import { ToolsService } from '$lib/services/tools.service';
 // direct imports between stores, not via the barrel, to avoid circular deps
 import { AgenticGates } from '$lib/stores/agentic/gates.svelte';
+import { commandMemoryStore } from '$lib/stores/command-memory.svelte';
 import { conversationsStore } from '$lib/stores/conversations/index.svelte';
 import { mcpStore } from '$lib/stores/mcp/index.svelte';
 import { modelsStore } from '$lib/stores/models/index.svelte';
@@ -243,7 +244,7 @@ class AgenticStore {
 
 	getPendingPermissionRequest(
 		conversationId: string
-	): { toolName: string; serverLabel: string } | null {
+	): { toolName: string; serverLabel: string; args?: string; onceOnly?: boolean } | null {
 		return this.gates.getPendingPermissionRequest(conversationId);
 	}
 
@@ -750,7 +751,10 @@ class AgenticStore {
 					conversationId,
 					toolName,
 					serverLabel,
-					signal
+					signal,
+					typeof toolCall.function.arguments === 'string'
+						? toolCall.function.arguments
+						: JSON.stringify(toolCall.function.arguments ?? {})
 				);
 
 				// Yield to allow Svelte to flush the UI update (hide permission dialog)
@@ -892,6 +896,9 @@ class AgenticStore {
 				}
 
 				this.updateSession(conversationId, { executingToolCallId: null });
+
+				// a system `run` command the user allowed and that worked is kept in the command memory
+				if (toolSuccess && isSystemControlTool(toolName)) this.rememberSystemCommand(toolCall, result);
 
 				const toolDurationMs = performance.now() - toolStartTime;
 				const toolTiming: ChatMessageToolCallTiming = {
@@ -1069,6 +1076,32 @@ class AgenticStore {
 			id: call?.id ?? `tool_${index}`,
 			type: (call?.type as ToolCallType.FUNCTION) ?? ToolCallType.FUNCTION
 		}));
+	}
+
+	/** Keep a successful, user-approved `system` run command in the command memory. */
+	private rememberSystemCommand(
+		toolCall: { function: { arguments: string | Record<string, unknown> } },
+		result: string
+	): void {
+		try {
+			const args = this.parseToolArguments(toolCall.function.arguments ?? '');
+			const action = String(args.action ?? '')
+				.trim()
+				.toLowerCase();
+
+			if (!['run', 'command', 'shell', 'exec'].includes(action)) return;
+
+			const command = String(args.target ?? '').trim();
+
+			if (!command || /^(Error|Refused|Unknown action|\(exit code)/.test(result.trim())) return;
+
+			// never keep destructive commands as "known good" suggestions
+			if (/\b(rm|rmdir|dd|mkfs|kill|killall|pkill|mv|chmod|chown|truncate|shred)\b/.test(command)) return;
+
+			commandMemoryStore.remember(String(args.source ?? ''), command);
+		} catch {
+			/* never let memory break a tool call */
+		}
 	}
 
 	private parseToolArguments(args: string | Record<string, unknown>): Record<string, unknown> {

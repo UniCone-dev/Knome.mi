@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { stripEmotionTags } from '$lib/utils/emotion-tags';
 	import ChatMessageToolCallBlock from './ChatMessage/ChatMessageToolCall/ChatMessageToolCallBlock.svelte';
 	import ChatMessageActivityGroup from './ChatMessageActivityGroup.svelte';
 	import ChatMessageReasoningBlock from './ChatMessageReasoningBlock.svelte';
@@ -195,12 +196,15 @@
 					: ''} {charactersStore.aiTextColor ? `color: ${charactersStore.aiTextColor};` : ''}"
 			>
 				<div class="agentic-text">
-					<MarkdownContent attachments={message?.extra} content={section.content} />
+					<MarkdownContent
+						attachments={message?.extra}
+						content={stripEmotionTags(section.content)}
+					/>
 				</div>
 			</Card>
 		{:else}
 			<div class="agentic-text">
-				<MarkdownContent attachments={message?.extra} content={section.content} />
+				<MarkdownContent attachments={message?.extra} content={stripEmotionTags(section.content)} />
 			</div>
 		{/if}
 	{:else if section.type === AgenticSectionType.REASONING || section.type === AgenticSectionType.REASONING_PENDING}
@@ -283,6 +287,8 @@
 	{#if visiblePermission}
 		<ChatMessageActionCardPermissionRequest
 			onDecision={handlePermission}
+			args={visiblePermission.args}
+			onceOnly={visiblePermission.onceOnly}
 			serverLabel={visiblePermission.serverLabel}
 			toolName={visiblePermission.toolName}
 		/>

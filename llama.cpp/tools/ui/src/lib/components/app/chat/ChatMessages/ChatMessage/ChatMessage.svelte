@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { livingStore } from '$lib/stores/living.svelte';
 	import { goto } from '$app/navigation';
 	import MessageMetaBar from './MessageMetaBar.svelte';
 	import {
@@ -445,11 +446,13 @@
 		</div>
 	{:else}
 		<div class="flex items-start gap-2">
-			{#if assistantAvatarUrl}
+			{#if assistantAvatarUrl || (livingStore.visible && livingStore.mode === 'avatar')}
 				<ChatMessageAvatar
 					alt={charactersStore.activeCharacter?.name ?? 'Assistant'}
 					avatarKind={charactersStore.activeCharacter?.avatarKind}
-					avatarUrl={assistantAvatarUrl}
+					avatarUrl={assistantAvatarUrl ?? ''}
+					living={isLastAssistantMessage}
+					livingRest={!isLastAssistantMessage}
 					shape={charactersStore.avatarShape}
 					size={charactersStore.avatarSize}
 				/>

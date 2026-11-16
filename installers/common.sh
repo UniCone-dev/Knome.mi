@@ -330,7 +330,14 @@ if ui_needs_build; then
         if [ ! -d node_modules ] || [ package-lock.json -nt node_modules/.package-lock.json ]; then
             npm install --no-audit --no-fund || exit 1
         fi
-        NODE_OPTIONS="--max-old-space-size=$NODE_HEAP" npm run build
+        if ! NODE_OPTIONS="--max-old-space-size=$NODE_HEAP" npm run build; then
+            # A half-finished or corrupt npm download (for example "Failed to resolve entry for package
+            # pdfjs-dist") is the usual reason. Repair = clean reinstall from the lock file, then build again.
+            warn "UI build failed. Repairing node_modules (clean reinstall) and trying once more..."
+            rm -rf node_modules
+            { npm ci --no-audit --no-fund || npm install --no-audit --no-fund; } || exit 1
+            NODE_OPTIONS="--max-old-space-size=$NODE_HEAP" npm run build || exit 1
+        fi
     ) || die "Web UI build failed. (Low RAM? close other apps and run ./install.sh --rebuild again.)"
     UI_REBUILT=1
     good "UI built."

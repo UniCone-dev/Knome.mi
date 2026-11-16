@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { LIVING_SIZE_MAX, LIVING_SIZE_MIN, livingStore } from '$lib/stores/living.svelte';
 	import { Check, Download, Plus, Upload } from '@lucide/svelte';
 	import { CharacterEditor } from '$lib/components/app/characters';
 	import { Button } from '$lib/components/ui/button';
@@ -258,6 +259,76 @@
 						<p class="text-xs text-muted-foreground">
 							A bar at the top of the chat showing who you're talking to, like a messaging app.
 						</p>
+					</div>
+
+					<div class="border-t border-border pt-3">
+						<div class="flex items-center justify-between gap-3">
+							<Label for="living-toggle">Living character</Label>
+							<Switch
+								id="living-toggle"
+								checked={livingStore.enabled}
+								onCheckedChange={(v) => livingStore.setEnabled(v)}
+							/>
+						</div>
+						<p class="text-xs text-muted-foreground">
+							Shows a small window in the chat where the character comes alive: idle, thinking,
+							speaking and every emotion you added with "Edit emotions". Only for characters that
+							have emotion media.
+						</p>
+
+						{#if livingStore.enabled}
+							<div class="mt-2 flex gap-2">
+								<Button
+									onclick={() => livingStore.setMode('avatar')}
+									size="sm"
+									variant={livingStore.mode === 'avatar' ? 'default' : 'outline'}
+								>
+									In the profile picture
+								</Button>
+								<Button
+									onclick={() => livingStore.setMode('floating')}
+									size="sm"
+									variant={livingStore.mode === 'floating' ? 'default' : 'outline'}
+								>
+									Floating window
+								</Button>
+							</div>
+							<p class="mt-1 text-xs text-muted-foreground">
+								{livingStore.mode === 'avatar'
+									? "The picture next to the AI's latest message (and on the start screen) comes alive."
+									: 'A small window in the corner of the chat.'}
+							</p>
+
+							{#if livingStore.mode === 'floating'}
+								<p class="mt-1 text-xs text-muted-foreground">
+									Drag the window to any place on the screen. It remembers where you put it.
+								</p>
+								<Button
+									class="mt-1"
+									onclick={() => livingStore.setPos(null)}
+									size="sm"
+									variant="ghost"
+								>
+									Back to the top right
+								</Button>
+								<div class="mt-2 flex items-center gap-3">
+									<span class="flex-shrink-0 text-sm">Size</span>
+									<input
+										class="flex-1"
+										max={LIVING_SIZE_MAX}
+										min={LIVING_SIZE_MIN}
+										oninput={(e) =>
+											livingStore.setSize(Number((e.target as HTMLInputElement).value))}
+										step="10"
+										type="range"
+										value={livingStore.size}
+									/>
+									<span class="w-14 flex-shrink-0 text-right text-xs text-muted-foreground">
+										{livingStore.size}px
+									</span>
+								</div>
+							{/if}
+						{/if}
 					</div>
 
 					<div class="border-t border-border pt-3">

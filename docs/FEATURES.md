@@ -25,3 +25,17 @@
 - + menu > **Create image / Create video**, or just ask. See [IMAGE.md](IMAGE.md).
 - Smart workload: text model off, image model on, picture made, image model off, text model back. Turns on by itself when the image server is found (you can switch it off).
 - Tell the AI what you want: "16:9, high quality, 40 steps, seed 7, no text". Attach a picture to edit it.
+
+## Living characters
+- Characters > **Edit emotions**: give a character idle, listening, thinking and speaking states and about 50 emotions.
+  Every emotion has 3 parts: **Start** (idle to the emotion), **Loop** (seamless) and **End** (back to idle). Files: mp4, webm, gif, png.
+- Each emotion also has a **Speaking** version (for example happily speaking). Timing is adjustable (1-5 s). Saved in the character card and exported with it.
+- In the chat the character plays: idle, thinking, speaking, feeling, idle. The AI picks the emotion with a hidden `[emo:name]` tag.
+- Show it **in the profile picture** (default) or as a **floating window** you can drag anywhere. Switch it off any time (Characters > Living character).
+
+## System control (off by default)
+- Turn it on with `./Knome-start.sh --settings`. The AI gets one `system` tool: open apps, play music or video by name, volume, brightness, Wi-Fi, Bluetooth,
+  open settings, find / install / remove apps (Flathub or apt), system info and, as a last resort, run a terminal command.
+- **Every single call asks you first** (Allow once or Deny, with the exact command shown). "Always allow" does not exist for this tool. sudo is never used.
+- **Command memory** (Settings > Tools): commands that you allowed and that worked are remembered, so the AI reuses them. If it does not know a command it searches the web first.
+- A command can still do harm. Read the card before you allow it. See the warning in Settings > Tools.

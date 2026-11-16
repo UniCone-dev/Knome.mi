@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Image, Sparkles, Trash2, Upload, X } from '@lucide/svelte';
+	import { Film, Image, Sparkles, Trash2, Upload, X } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -9,6 +9,7 @@
 	import { conversationsStore, draftMessagesStore } from '$lib/stores';
 	import type { DatabaseCharacter } from '$lib/types/database';
 	import { toast } from 'svelte-sonner';
+	import CharacterEmotionsEditor from './CharacterEmotionsEditor.svelte';
 
 	interface Props {
 		character?: DatabaseCharacter | null;
@@ -34,6 +35,7 @@
 
 	let fileInput = $state<HTMLInputElement | null>(null);
 	let assistReply = $state('');
+	let showEmotions = $state(false);
 
 	const MAX_AVATAR_BYTES = 15 * 1024 * 1024; // 15MB -- generous for a short mp4 loop
 
@@ -212,6 +214,9 @@
 	}
 </script>
 
+{#if showEmotions && character}
+	<CharacterEmotionsEditor {character} onBack={() => (showEmotions = false)} />
+{:else}
 <form class="flex flex-col gap-5" onsubmit={handleSubmit}>
 	<div class="flex items-start gap-4">
 		<div class="relative flex-shrink-0">
@@ -362,6 +367,25 @@
 		</div>
 	{/if}
 
+	{#if !editingUserPersona}
+		<div class="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 p-3">
+			<Film class="h-5 w-5 text-primary" />
+
+			<div class="min-w-0 flex-1">
+				<p class="text-sm font-medium">Living emotions</p>
+				<p class="text-xs text-muted-foreground">
+					{character
+						? 'Videos, GIFs or pictures for idle, thinking, speaking and every emotion.'
+						: 'Save the character first, then you can add its living emotions.'}
+				</p>
+			</div>
+
+			<Button disabled={!character} onclick={() => (showEmotions = true)} size="sm" type="button" variant="secondary">
+				Edit emotions
+			</Button>
+		</div>
+	{/if}
+
 	<div class="flex items-center justify-between pt-2">
 		{#if onDelete}
 			<Button onclick={onDelete} size="sm" type="button" variant="ghost">
@@ -378,3 +402,4 @@
 		</div>
 	</div>
 </form>
+{/if}

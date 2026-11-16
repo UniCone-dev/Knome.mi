@@ -7,6 +7,7 @@
  * resolvePermission/resolveContinue. Owned by agenticStore, no host coupling.
  */
 
+import { isSystemControlKey, isSystemControlTool } from '$lib/constants';
 import { ToolPermissionDecision } from '$lib/enums';
 // direct imports between stores, not via the barrel, to avoid circular deps
 import { permissionsStore } from '$lib/stores/permissions.svelte';
@@ -23,7 +24,7 @@ export class AgenticGates {
 	/** Dedicated reactive state for pending permission requests (ensures immediate UI updates) */
 	private pendingPermissions = new SvelteMap<
 		string,
-		{ toolName: string; serverLabel: string } | null
+		{ toolName: string; serverLabel: string; args?: string; onceOnly?: boolean } | null
 	>();
 	/** Resolve functions for pending permission Promises; nothing derives from this map */
 	private permissionResolvers = new SvelteMap<string, (decision: ToolPermissionDecision) => void>();
@@ -69,7 +70,7 @@ export class AgenticGates {
 
 	getPendingPermissionRequest(
 		conversationId: string
-	): { toolName: string; serverLabel: string } | null {
+	): { toolName: string; serverLabel: string; args?: string; onceOnly?: boolean } | null {
 		return this.pendingPermissions.get(conversationId) ?? null;
 	}
 
@@ -133,15 +134,19 @@ export class AgenticGates {
 		conversationId: string,
 		toolName: string,
 		serverLabel: string,
-		signal?: AbortSignal
+		signal?: AbortSignal,
+		args?: string
 	): Promise<ToolPermissionDecision> {
 		const permissionKey = toolsStore.getPermissionKey(toolName);
+		// system-control tools (system_*) ask EVERY time, no "always allow" can skip this
+		const onceOnly =
+			isSystemControlTool(toolName) || (permissionKey ? isSystemControlKey(permissionKey) : false);
 
-		if (permissionKey && permissionsStore.hasTool(permissionKey)) {
+		if (!onceOnly && permissionKey && permissionsStore.hasTool(permissionKey)) {
 			return ToolPermissionDecision.ONCE;
 		}
 
-		this.pendingPermissions.set(conversationId, { serverLabel, toolName });
+		this.pendingPermissions.set(conversationId, { serverLabel, toolName, args, onceOnly });
 
 		return new Promise<ToolPermissionDecision>((resolve) => {
 			if (signal?.aborted) {
@@ -154,6 +159,17 @@ export class AgenticGates {
 			this.permissionResolvers.set(conversationId, (decision) => {
 				this.pendingPermissions.set(conversationId, null);
 
+				if (onceOnly) {
+					// never remember: anything but Deny counts as "once"
+					resolve(
+						decision === ToolPermissionDecision.DENY
+							? ToolPermissionDecision.DENY
+							: ToolPermissionDecision.ONCE
+					);
+
+					return;
+				}
+
 				if (decision === ToolPermissionDecision.ALWAYS && permissionKey) {
 					permissionsStore.allowTool(permissionKey);
 				} else if (decision === ToolPermissionDecision.ALWAYS_SERVER) {
@@ -163,6 +179,7 @@ export class AgenticGates {
 								? t.serverName === serverLabel
 								: toolsStore.getToolServerLabel(t.definition.function.name) === serverLabel
 						)
+						.filter((t) => !isSystemControlTool(t.definition.function.name))
 						.map((t) => toolsStore.getPermissionKey(t.definition.function.name)!)
 						.filter((k): k is string => k !== null);
 

@@ -18,6 +18,15 @@ import { DatabaseService } from '$lib/services/database.service';
 // direct import (not the barrel) to avoid circular store dependencies
 import { settingsStore } from '$lib/stores/settings/index.svelte';
 import { toast } from 'svelte-sonner';
+import {
+	clipFromFile,
+	cloneEmotions,
+	emotionHasMedia,
+	emotionsFromExport,
+	emotionsToExport,
+	type ExportedEmotions
+} from '$lib/utils/emotion-media';
+import type { EmotionSet } from '$lib/types/database';
 
 export type AvatarShape = 'circle' | 'squircle' | 'rounded' | 'square' | 'hexagon' | 'diamond';
 
@@ -106,6 +115,8 @@ export interface CharacterCardExport {
 	firstMessage?: string;
 	tags?: string[];
 	isUserPersona?: boolean;
+	/** Living emotions, media as data URLs (only present when the character has some). */
+	emotions?: ExportedEmotions;
 }
 
 function loadActiveSelection(): ActiveSelection {
@@ -544,8 +555,67 @@ class CharactersStore {
 		return block.trim();
 	}
 
+	// -------------------------------------------------------------------
+	// Living emotions (see EmotionSet): each change is saved at once.
+	// -------------------------------------------------------------------
+
+	private async saveEmotions(id: string, emotions: Record<string, EmotionSet>): Promise<void> {
+		await this.updateCharacter(id, { emotions });
+	}
+
+	/** Put a picked file into one part (start / loop / end) of an emotion. Returns an error text or null. */
+	async setEmotionClip(
+		id: string,
+		key: string,
+		slot: 'start' | 'loop' | 'end',
+		file: File
+	): Promise<string | null> {
+		const { clip, error } = clipFromFile(file);
+
+		if (!clip) return error ?? 'Unsupported file';
+
+		const emotions = cloneEmotions(this.getCharacter(id)?.emotions);
+
+		emotions[key] = { ...(emotions[key] ?? {}), [slot]: clip };
+		await this.saveEmotions(id, emotions);
+
+		return null;
+	}
+
+	async removeEmotionClip(id: string, key: string, slot: 'start' | 'loop' | 'end'): Promise<void> {
+		const emotions = cloneEmotions(this.getCharacter(id)?.emotions);
+		const set = emotions[key];
+
+		if (!set) return;
+
+		delete set[slot];
+
+		if (!emotionHasMedia(set)) delete emotions[key];
+
+		await this.saveEmotions(id, emotions);
+	}
+
+	/** Change how long the loop part stays (holdSeconds) or how long a still start/end shows (stepSeconds). */
+	async setEmotionTiming(
+		id: string,
+		key: string,
+		timing: { holdSeconds?: number; stepSeconds?: number }
+	): Promise<void> {
+		const emotions = cloneEmotions(this.getCharacter(id)?.emotions);
+
+		emotions[key] = { ...(emotions[key] ?? {}), ...timing };
+		await this.saveEmotions(id, emotions);
+	}
+
+	async removeEmotion(id: string, key: string): Promise<void> {
+		const emotions = cloneEmotions(this.getCharacter(id)?.emotions);
+
+		delete emotions[key];
+		await this.saveEmotions(id, emotions);
+	}
+
 	/** Exports a single character/persona to a downloadable JSON file, portrait included. */
-	exportCharacter(id: string): void {
+	async exportCharacter(id: string): Promise<void> {
 		if (!browser) return;
 
 		const character = this.getCharacter(id);
@@ -564,6 +634,18 @@ class CharactersStore {
 			tags: character.tags,
 			isUserPersona: character.isUserPersona
 		};
+
+		if (
+			character.emotions &&
+			(Object.values(character.emotions) as EmotionSet[]).some((e) => emotionHasMedia(e))
+		) {
+			try {
+				payload.emotions = await emotionsToExport(character.emotions);
+			} catch (error) {
+				console.error('Failed to export emotions:', error);
+				toast.error('Could not include the emotions in the export');
+			}
+		}
 
 		const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
@@ -671,6 +753,8 @@ class CharactersStore {
 				return null;
 			}
 
+			const emotions = parsed.emotions ? await emotionsFromExport(parsed.emotions) : undefined;
+
 			return this.createCharacter({
 				name: parsed.name,
 				gender: parsed.gender,
@@ -680,7 +764,8 @@ class CharactersStore {
 				personality: parsed.personality,
 				firstMessage: parsed.firstMessage,
 				tags: parsed.tags,
-				isUserPersona: parsed.isUserPersona
+				isUserPersona: parsed.isUserPersona,
+				emotions: emotions && Object.keys(emotions).length > 0 ? emotions : undefined
 			});
 		} catch (error) {
 			console.error('Failed to import character:', error);

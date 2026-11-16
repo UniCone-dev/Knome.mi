@@ -373,6 +373,16 @@ def run_python(code: str) -> str:
         return f"Error: {e}"
 
 
+# System-control tools (open apps, media, settings, install/remove, run command): only when switched on
+# with KNOME_SYSTEM_TOOLS=1. Every call is confirmed by the user in the UI, see system_tools.py.
+try:
+    import system_tools
+
+    system_tools.register(mcp)
+except Exception as _e:  # never let an optional module stop the memory / web tools
+    print(f"system tools not loaded: {_e}", file=__import__("sys").stderr)
+
+
 if __name__ == "__main__":
     os.makedirs(MEMORY_ROOT, exist_ok=True)
     os.makedirs(CHARACTERS_ROOT, exist_ok=True)

@@ -4,6 +4,7 @@
 #   KNOME_CTX   auto | 4096 | 8192 | 16384 | 32768 | 65536 | 131072   how much text the AI remembers per chat
 #   KNOME_NGL   auto | all | <n>       how many model layers go to the GPU
 #   KNOME_PORT  8080                   web address http://127.0.0.1:PORT
+#   KNOME_SYSTEM_TOOLS 0|1             1 = the AI may open apps, change settings, install apps (asks you before EVERY action)
 
 vram_mb() {   # best-effort GPU memory in MB, empty when unknown
     local f v best=0
@@ -36,9 +37,9 @@ choose() {
 
 ask_settings() {   # ask_settings <backend>
     local backend="$1" file="$STATE_DIR/settings.env"
-    local ctx=auto ngl=auto port=8080 vram hint=""
+    local ctx=auto ngl=auto port=8080 systools=0 vram hint=""
     # keep earlier answers as defaults
-    [ -f "$file" ] && . "$file" && ctx="${KNOME_CTX:-auto}" ngl="${KNOME_NGL:-auto}" port="${KNOME_PORT:-8080}"
+    [ -f "$file" ] && . "$file" && ctx="${KNOME_CTX:-auto}" ngl="${KNOME_NGL:-auto}" port="${KNOME_PORT:-8080}" systools="${KNOME_SYSTEM_TOOLS:-0}"
 
     if [ "${INTERACTIVE:-0}" = "1" ]; then
         printf '\n%s==> Settings%s   %s(press Enter to accept the recommended answer; change later with ./install.sh --settings)%s\n' "$BOLD$GREEN" "$RESET" "$DIM" "$RESET"
@@ -66,6 +67,10 @@ ask_settings() {   # ask_settings <backend>
             ngl=0
         fi
 
+        choose "Let the AI control this computer (open apps, play music, change volume/Wi-Fi, install apps, run commands)? You are asked before EVERY single action and can only 'Allow once'." "$([ "$systools" = "1" ] && echo 2 || echo 1)" \
+            "No - chat, tools and memory only (recommended)" "Yes - allow system control (each action still asks you)"
+        case "$CHOICE" in 1) systools=0 ;; 2) systools=1 ;; esac
+
         read -r -p "    Web port [$port]: " _p
         case "${_p:-$port}" in ''|*[!0-9]*) ;; *) port="${_p:-$port}" ;; esac
     else
@@ -77,6 +82,7 @@ ask_settings() {   # ask_settings <backend>
 KNOME_CTX=$ctx
 KNOME_NGL=$ngl
 KNOME_PORT=$port
+KNOME_SYSTEM_TOOLS=$systools
 EOT
-    good "Settings saved: context=$ctx, GPU layers=$ngl, port=$port"
+    good "Settings saved: context=$ctx, GPU layers=$ngl, port=$port, system control=$([ "$systools" = 1 ] && echo on || echo off)"
 }

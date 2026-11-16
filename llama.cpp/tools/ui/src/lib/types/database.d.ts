@@ -48,6 +48,32 @@ export interface DatabaseProject {
 	createdAt: number;
 }
 
+/** One picture / GIF / video of a living character's emotion (kept as a Blob in IndexedDB). */
+export interface EmotionClip {
+	blob: Blob;
+	kind: 'image' | 'gif' | 'video';
+	mime: string;
+	name?: string;
+}
+
+/**
+ * The three parts of one emotion (or state):
+ *  - start: idle -> the emotion (plays once)
+ *  - loop:  the emotion itself, made to repeat without a visible cut
+ *  - end:   the emotion -> back to idle (plays once)
+ * Keys of `DatabaseCharacter.emotions`: idle, listening, thinking, speaking, `<emotion>` (feeling)
+ * and `<emotion>:speaking` (talking while feeling it).
+ */
+export interface EmotionSet {
+	start?: EmotionClip;
+	loop?: EmotionClip;
+	end?: EmotionClip;
+	/** How long the loop part stays (feelings only), seconds. */
+	holdSeconds?: number;
+	/** How long a still image / GIF start or end part is shown, seconds. */
+	stepSeconds?: number;
+}
+
 /**
  * A Character Card -- an AI persona (or, with `isUserPersona`, the user's
  * own persona) that can be picked as "active" and gets woven into the
@@ -71,6 +97,8 @@ export interface DatabaseCharacter {
 	/** Optional in-character greeting shown/sent when a chat with this character starts. */
 	firstMessage?: string;
 	tags?: string[];
+	/** Living emotions: videos / GIFs / images per emotion and state (see EmotionSet). */
+	emotions?: Record<string, EmotionSet>;
 	/** True for a "who the user is" persona card rather than an AI character. */
 	isUserPersona?: boolean;
 	lastModified: number;

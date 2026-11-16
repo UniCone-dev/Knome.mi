@@ -11,6 +11,9 @@
 
 import { imageGenStore } from '../imagegen.svelte';
 import { memoryStore } from '$lib/stores/memory.svelte';
+import { commandMemoryStore } from '$lib/stores/command-memory.svelte';
+import { livingStore } from '$lib/stores/living.svelte';
+import { isSystemControlTool } from '$lib/constants';
 import {
 	CWD_CLEARED_TEXT,
 	PROFILE_CATEGORY_OPTIONS,
@@ -457,6 +460,19 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 
 		if (memoryBlock) {
 			apiOptions.systemMessage = `${apiOptions.systemMessage}\n\n${memoryBlock}`;
+		}
+
+		// a living character on screen: ask for an [emo:NAME] tag that drives its video
+		const livingBlock = livingStore.buildPromptBlock();
+
+		if (livingBlock) {
+			apiOptions.systemMessage = `${apiOptions.systemMessage}\n\n${livingBlock}`;
+		}
+
+		// system control (the `system` tool) only exists when the user turned it on: then tell the model
+		// how to use it and which commands already worked on this computer
+		if (toolsStore.allTools.some((t) => isSystemControlTool(t.definition.function.name))) {
+			apiOptions.systemMessage = `${apiOptions.systemMessage}\n\n${commandMemoryStore.buildPromptBlock()}`;
 		}
 
 		// Tell the model which conversation it's in, so it can scope

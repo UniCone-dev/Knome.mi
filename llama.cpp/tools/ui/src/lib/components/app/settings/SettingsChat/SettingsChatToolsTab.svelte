@@ -3,11 +3,12 @@
 	import { McpServerIdentity, TruncatedText } from '$lib/components/app';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as Collapsible from '$lib/components/ui/collapsible';
-	import { ICON_CLASS_DEFAULT } from '$lib/constants';
+	import { ICON_CLASS_DEFAULT, isSystemControlKey } from '$lib/constants';
 	import { ToolSource } from '$lib/enums/tools.enums';
 	import { mcpStore, permissionsStore, toolsStore } from '$lib/stores';
 	import { getToolUi } from '$lib/utils';
 	import { SvelteSet } from 'svelte/reactivity';
+	import SettingsChatSystemControlSection from './SettingsChatSystemControlSection.svelte';
 
 	let expandedGroups = new SvelteSet<string>();
 	let groups = $derived(toolsStore.toolGroups);
@@ -20,6 +21,10 @@
 		}
 	}
 </script>
+
+<div class="mb-4">
+	<SettingsChatSystemControlSection />
+</div>
 
 {#if groups.length === 0}
 	<div class="py-8 text-center text-sm text-muted-foreground">No tools available</div>
@@ -114,17 +119,24 @@
 								</div>
 
 								<div class="flex w-20 shrink-0 justify-center">
-									<Checkbox
-										checked={isAlwaysAllowed}
-										class={ICON_CLASS_DEFAULT}
-										onCheckedChange={() => {
-											if (isAlwaysAllowed) {
-												permissionsStore.revokeTool(permissionKey);
-											} else {
-												permissionsStore.allowTool(permissionKey);
-											}
-										}}
-									/>
+									{#if isSystemControlKey(permissionKey)}
+										<span
+											class="text-xs text-muted-foreground"
+											title="System-control tools always ask before every use">asks always</span
+										>
+									{:else}
+										<Checkbox
+											checked={isAlwaysAllowed}
+											class={ICON_CLASS_DEFAULT}
+											onCheckedChange={() => {
+												if (isAlwaysAllowed) {
+													permissionsStore.revokeTool(permissionKey);
+												} else {
+													permissionsStore.allowTool(permissionKey);
+												}
+											}}
+										/>
+									{/if}
 								</div>
 							</div>
 						{/each}

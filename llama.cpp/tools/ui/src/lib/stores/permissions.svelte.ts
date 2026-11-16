@@ -7,7 +7,7 @@
  */
 
 import { browser } from '$app/environment';
-import { ALWAYS_ALLOWED_TOOLS_LOCALSTORAGE_KEY } from '$lib/constants';
+import { ALWAYS_ALLOWED_TOOLS_LOCALSTORAGE_KEY, isSystemControlKey } from '$lib/constants';
 import { SvelteSet } from 'svelte/reactivity';
 
 class PermissionsStore {
@@ -17,18 +17,24 @@ class PermissionsStore {
 		return this._tools;
 	}
 
+	// System-control tools (system_*) can never be allowed permanently: they ask every single time.
 	allowTool(key: string): void {
+		if (isSystemControlKey(key)) return;
+
 		this._tools.add(key);
 		this.persist();
 	}
 
 	allowTools(keys: string[]): void {
-		for (const key of keys) this._tools.add(key);
+		for (const key of keys) {
+			if (!isSystemControlKey(key)) this._tools.add(key);
+		}
+
 		this.persist();
 	}
 
 	hasTool(key: string): boolean {
-		return this._tools.has(key);
+		return !isSystemControlKey(key) && this._tools.has(key);
 	}
 
 	/**
@@ -44,7 +50,7 @@ class PermissionsStore {
 
 			if (stored) {
 				for (const name of JSON.parse(stored) as string[]) {
-					if (typeof name === 'string') this._tools.add(name);
+					if (typeof name === 'string' && !isSystemControlKey(name)) this._tools.add(name);
 				}
 			}
 		} catch (err) {

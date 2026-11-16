@@ -6,6 +6,8 @@
 	import MessengerContactInfo from './MessengerContactInfo.svelte';
 	import MessengerEmptyChat from './MessengerEmptyChat.svelte';
 	import ChatCharacterHeader from './ChatCharacterHeader.svelte';
+	import { LivingDriver, LivingStage } from '$lib/components/app/characters';
+	import { livingStore } from '$lib/stores/living.svelte';
 	import { page } from '$app/state';
 	import {
 		ChatMessages,
@@ -320,6 +322,14 @@
 
 		{#if !isEmpty || charactersStore.isWhatsappMode}
 			<ChatCharacterHeader />
+		{/if}
+
+		{#if livingStore.visible}
+			<LivingDriver />
+
+			{#if livingStore.mode === 'floating'}
+				<LivingStage />
+			{/if}
 		{/if}
 
 		{#if !isEmpty}
