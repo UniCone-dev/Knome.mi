@@ -55,6 +55,8 @@ export interface ImageGenConfig {
 	aiCanStart: boolean;
 	/** add a short "image ready" note under the picture */
 	announce: boolean;
+	/** when you ask to change "it", use the latest picture of the chat without attaching it again */
+	rememberLast: boolean;
 	sdUrl: string;
 	/** recipe id and chosen file per slot, for image and for video */
 	imageRecipe: string;
@@ -80,6 +82,7 @@ const DEFAULTS: ImageGenConfig = {
 	video: false,
 	aiCanStart: true,
 	announce: true,
+	rememberLast: true,
 	sdUrl: 'http://127.0.0.1:1234',
 	imageRecipe: '',
 	imageModels: {},
@@ -154,6 +157,8 @@ export interface GenOptions {
 	fps?: number;
 	/** pictures to edit / use as reference (data URLs) */
 	images?: string[];
+	/** the AI's choice: "last" = edit the latest picture of this chat, "none" = a brand-new picture */
+	edit?: 'last' | 'none';
 }
 
 function parseAttrs(raw: string): GenOptions {
@@ -190,7 +195,23 @@ function parseAttrs(raw: string): GenOptions {
 	o.frames = num(a.frames);
 	o.fps = num(a.fps);
 
+	const edit = (a.edit ?? '').toLowerCase();
+
+	if (edit === 'last' || edit === 'none') o.edit = edit;
+
 	return o;
+}
+
+/** "make it brighter", "isko night bana do": a change verb AND a word pointing at the earlier picture */
+const EDIT_VERB =
+	/\b(edit|change|make|turn|add|remove|replace|fix|brighter|darker|bigger|smaller|recolou?r|badlo|badal|hatao|hata|bana\s?do|karo|kar\s?do|dalo|daal)\b/i;
+const EDIT_REF =
+	/\b(it|this|that|same|previous|last|above|again|isko|isme|usko|usme|yeh|ye\s+wali|wahi|wali|pehli|pichli|upar)\b/i;
+
+export function looksLikeEdit(text: string): boolean {
+	const t = text.trim();
+
+	return t.length > 0 && t.length < 400 && EDIT_VERB.test(t) && EDIT_REF.test(t);
 }
 
 const SAMPLERS = [
@@ -391,6 +412,11 @@ class ImageGenStore {
 			'There is NO image tool or function. Never call a tool/function for pictures (no generate_image); just write the tag, the app does the rest.',
 			'The prompt must be English, one detailed paragraph: subject, setting, style, lighting, colours, composition, camera/lens, mood, quality words. No lists, no commentary inside the tag.',
 			'If the user attached picture(s), they are sent to the generator automatically: write the prompt as the wanted CHANGE or the full wanted result, and keep their subject.',
+			...(k === 'image' && c.rememberLast && this.lastPicture()
+				? [
+						'A picture from earlier in this chat is remembered by the app (the one you or the user made last). When the user wants to CHANGE, fix, continue or vary that picture ("make it brighter", "add a hat", "same but night") and did not attach anything, add edit="last" inside the tag: the app then sends that picture to the generator. Write the prompt as the wanted result and keep the same subject. For a completely different picture add edit="none".'
+					]
+				: []),
 			'Never say the picture is finished yourself - the app shows it automatically.'
 		);
 
@@ -409,6 +435,26 @@ class ImageGenStore {
 			);
 
 		return lines.join('\n');
+	}
+
+	/** The newest picture of this chat (made by the app or attached by the user), as a data URL. */
+	lastPicture(exceptMessageId?: string): string | null {
+		const msgs = conversationsStore.activeMessages;
+
+		for (let i = msgs.length - 1; i >= 0; i--) {
+			const m = msgs[i];
+
+			if (m.id === exceptMessageId) continue;
+
+			const imgs = (m.extra ?? []).filter(
+				(e: DatabaseMessageExtra) =>
+					e.type === 'IMAGE' && !!(e as DatabaseMessageExtraImageFile).base64Url
+			);
+
+			if (imgs.length) return (imgs[imgs.length - 1] as DatabaseMessageExtraImageFile).base64Url;
+		}
+
+		return null;
 	}
 
 	/** user's composer choices win over the AI's; the model's size limits always apply */
@@ -1061,6 +1107,7 @@ class ImageGenStore {
 		this.armed = null;
 
 		const clean = this.stripTag(content);
+		let usedLast = false;
 
 		await this.applyContent(messageId, clean);
 
@@ -1073,7 +1120,17 @@ class ImageGenStore {
 			.map((e: DatabaseMessageExtra) => (e as DatabaseMessageExtraImageFile).base64Url)
 			.filter(Boolean);
 
-		if (attached.length) opts.images = attached;
+		if (attached.length) {
+			opts.images = attached;
+		} else if (kind === 'image' && this.config.rememberLast && opts.edit !== 'none') {
+			// no picture attached: the AI said "edit the last one", or the words say it clearly
+			const last = this.lastPicture(messageId);
+
+			if (last && (opts.edit === 'last' || looksLikeEdit(userText))) {
+				opts.images = [last];
+				usedLast = true;
+			}
+		}
 
 		const out = await this.run(kind, prompt, opts);
 
@@ -1102,7 +1159,7 @@ class ImageGenStore {
 					base64Url: dataUrl
 				};
 		const note = this.config.announce
-			? `${clean ? clean + '\n\n' : ''}✅ ${kind === 'image' ? 'Image' : 'Video'} ready.`
+			? `${clean ? clean + '\n\n' : ''}✅ ${kind === 'image' ? 'Image' : 'Video'} ready${usedLast ? ' (made from the previous picture)' : ''}.`
 			: clean;
 		const extras = [...(msg.extra ?? []), extra] as DatabaseMessageExtra[];
 

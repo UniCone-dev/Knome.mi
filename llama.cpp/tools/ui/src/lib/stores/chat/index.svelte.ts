@@ -12,6 +12,7 @@
 import { imageGenStore } from '../imagegen.svelte';
 import { memoryStore } from '$lib/stores/memory.svelte';
 import { commandMemoryStore } from '$lib/stores/command-memory.svelte';
+import { continuityStore } from '$lib/stores/continuity.svelte';
 import { livingStore } from '$lib/stores/living.svelte';
 import { isSystemControlTool } from '$lib/constants';
 import {
@@ -460,6 +461,13 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 
 		if (memoryBlock) {
 			apiOptions.systemMessage = `${apiOptions.systemMessage}\n\n${memoryBlock}`;
+		}
+
+		// a chat that carries on from an earlier one: its summary + last messages
+		const handoffBlock = continuityStore.buildPromptBlock();
+
+		if (handoffBlock) {
+			apiOptions.systemMessage = `${apiOptions.systemMessage}\n\n${handoffBlock}`;
 		}
 
 		// a living character on screen: ask for an [emo:NAME] tag that drives its video
@@ -948,6 +956,7 @@ class ChatStore implements ChatStreamHost, ChatFlowsHost {
 	private async maybeAutoSaveChatSummary(convId: string, convName: string): Promise<void> {
 		const percent = contextStatsStore.contextPercent;
 
+		if (!continuityStore.config.saveSummary) return;
 		if (percent === null || percent < 90) return;
 		if (this.autoSummarizedConversationIds.has(convId)) return;
 

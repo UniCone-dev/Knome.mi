@@ -33,6 +33,12 @@
 /llama.cpp/tools/ui/static/favicon*.svg
 /stable-diffusion.cpp/build/
 /core-tools/venv/
+/build-appimage/
+/app/src-tauri/target/
+/app/src-tauri/gen/
+/app/src-tauri/target/
+/app/src-tauri/gen/
+*.AppImage
 /core-tools/__pycache__/
 **/__pycache__/
 *.pyc

@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# Knome AppImage entry point. Program files are read-only inside the image;
+# everything you create (memory, settings, characters, python tools) lives in ~/.local/share/Knome.
+HERE="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+APP="$HERE/usr/share/knome"
+export KNOME_APPIMAGE=1
+export KNOME_DATA_DIR="${KNOME_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/Knome}"
+DATA="$KNOME_DATA_DIR"
+STATE="$DATA/.knome-state"
+# libraries bundled by tools/build-appimage.sh (the GPU driver / Vulkan always comes from your system)
+[ -d "$HERE/usr/lib" ] && export LD_LIBRARY_PATH="$HERE/usr/lib:${LD_LIBRARY_PATH:-}"
+mkdir -p "$STATE"
+. "$APP/installers/paths.sh"
+knome_load_paths "$DATA"
+
+say()  { printf '  %s\n' "$*"; }
+note() {   # note <text>  : desktop popup if possible, always on the terminal
+    say "$*"
+    if [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; then
+        if command -v notify-send >/dev/null 2>&1; then notify-send "Knome" "$*" 2>/dev/null
+        elif command -v kdialog >/dev/null 2>&1; then kdialog --passivepopup "$*" 6 2>/dev/null; fi
+    fi
+    return 0
+}
+msg() {    # msg <text> : a window the user must read
+    say "$*"
+    if [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; then
+        if command -v kdialog >/dev/null 2>&1; then kdialog --title Knome --msgbox "$*" 2>/dev/null; return 0
+        elif command -v zenity >/dev/null 2>&1; then zenity --info --title=Knome --text="$*" 2>/dev/null; return 0; fi
+    fi
+    return 0
+}
+has_models() {
+    local m="${KNOME_MODELS_DIR:-$DATA/models}"
+    compgen -G "$m/*.gguf" >/dev/null 2>&1 || compgen -G "$m/*/*.gguf" >/dev/null 2>&1
+}
+
+NO_BROWSER=0
+for a in "$@"; do
+    case "$a" in
+        -h|--help)
+            cat <<'TXT'
+Knome (AppImage)
+  ./Knome-x86_64.AppImage                run Knome (opens http://127.0.0.1:8080)
+  --models-folder    choose your TEXT models folder
+  --image-folder     choose your IMAGE models folder
+  --settings         context size / GPU layers / port / system control
+  --no-browser       do not open any window (server only)
+  --data-dir         print where your data lives
+Environment: KNOME_DATA_DIR, KNOME_MODELS_DIR, KNOME_IMAGE_MODELS_DIR, LLM_PORT, LLM_CTX, LLM_NGL
+TXT
+            exit 0 ;;
+        --data-dir) echo "$DATA"; exit 0 ;;
+        --models-folder) knome_choose_folders "$DATA" models; exit 0 ;;
+        --image-folder)  knome_choose_folders "$DATA" image; exit 0 ;;
+        --settings)
+            BOLD=$'\033[1m'; GREEN=$'\033[32m'; DIM=$'\033[2m'; RESET=$'\033[0m'
+            info() { printf '    %s\n' "$1"; }; good() { printf '    OK %s\n' "$1"; }
+            STATE_DIR="$STATE"; SCRIPT_DIR="$APP"; INTERACTIVE=1
+            . "$APP/installers/settings.sh"; ask_settings vulkan; exit 0 ;;
+        --no-browser) export KNOME_NO_BROWSER=1; NO_BROWSER=1 ;;
+    esac
+done
+
+# keep a log when started from the menu / double click (no terminal)
+[ -t 1 ] || exec > >(tee -a "$DATA/knome.log") 2>&1
+
+# ---- first run -------------------------------------------------------------
+if [ ! -f "$STATE/first-run-done" ]; then
+    note "Welcome to Knome - first start"
+    [ -d "$DATA/characters" ] || cp -r "$APP/characters" "$DATA/characters" 2>/dev/null
+    mkdir -p "$DATA/models" "$DATA/image-models"
+    [ -f "$STATE/settings.env" ] || cat > "$STATE/settings.env" <<'EOT'
+# Knome settings. Change with:  ./Knome-x86_64.AppImage --settings
+KNOME_CTX=auto
+KNOME_NGL=auto
+KNOME_PORT=8080
+KNOME_SYSTEM_TOOLS=0
+EOT
+    if ! has_models; then
+        msg "Select your models folder.
+
+Choose the folder that holds your .gguf text models (a vision model goes in its own sub-folder with its mmproj file). Cancel = use $DATA/models"
+        knome_choose_folders "$DATA" models
+        if [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] || [ -t 0 ]; then
+            msg "Image models (optional): choose the folder with your image models, or cancel to use $DATA/image-models"
+            knome_choose_folders "$DATA" image
+        fi
+    fi
+    touch "$STATE/first-run-done"
+fi
+knome_load_paths "$DATA"
+
+# ---- python tools (memory, web search, system control) ------------------------
+PYV="$DATA/venv"
+if [ ! -x "$PYV/bin/python3" ] || [ ! -f "$STATE/venv-ok" ]; then
+    command -v python3 >/dev/null 2>&1 || { msg "Knome needs python3 for its tools. Install it (Debian/Ubuntu: sudo apt install python3 python3-venv python3-pip) and start Knome again."; exit 1; }
+    note "Setting up the tools (one time, needs internet) ..."
+    rm -rf "$PYV"
+    if python3 -m venv "$PYV" && "$PYV/bin/python3" -m pip install -q --upgrade pip \
+       && "$PYV/bin/python3" -m pip install -q "mcp>=2,<3" ddgs httpx beautifulsoup4 wikipedia; then
+        touch "$STATE/venv-ok"
+    else
+        rm -rf "$PYV"
+        msg "Could not set up the tools. Check your internet and that python3-venv is installed (sudo apt install python3-venv), then start Knome again."
+        exit 1
+    fi
+fi
+export KNOME_PYTHON="$PYV/bin/python3"
+
+# ---- models ---------------------------------------------------------------------
+if ! has_models; then
+    msg "No text model found in ${KNOME_MODELS_DIR:-$DATA/models}. Select the folder that contains your .gguf models."
+    knome_choose_folders "$DATA" models
+    knome_load_paths "$DATA"
+    if ! has_models; then
+        msg "Still no .gguf model found. Put a model in ${KNOME_MODELS_DIR:-$DATA/models} (or run with --models-folder) and start Knome again."
+        exit 1
+    fi
+fi
+
+# own window (native app) when it was built in; KNOME_WINDOW=browser|app uses a browser instead
+NATIVE="$HERE/usr/bin/knome-app"
+if [ -x "$NATIVE" ] && [ "$NO_BROWSER" = "0" ] && [ "${KNOME_WINDOW:-native}" = "native" ]; then
+    export KNOME_START_SCRIPT="$APP/start-knome.sh"
+    exec "$NATIVE"
+fi
+exec "$APP/start-knome.sh"

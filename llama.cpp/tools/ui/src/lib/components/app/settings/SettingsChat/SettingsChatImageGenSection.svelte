@@ -79,6 +79,16 @@
 			<label
 				class="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3 text-sm"
 			>
+				<span>Remember the last picture, so I can say "make it brighter" without attaching it</span>
+				<Switch
+					checked={c.rememberLast}
+					onCheckedChange={(v) => imageGenStore.update({ rememberLast: v })}
+				/>
+			</label>
+
+			<label
+				class="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3 text-sm"
+			>
 				<span>Show "Image ready" note under the picture</span>
 				<Switch
 					checked={c.announce}

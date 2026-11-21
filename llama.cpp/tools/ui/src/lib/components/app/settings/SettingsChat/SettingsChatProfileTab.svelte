@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ExperiencePicker from '$lib/components/app/misc/ExperiencePicker.svelte';
 	import SettingsChatMemorySection from './SettingsChatMemorySection.svelte';
+	import SettingsChatContinuitySection from './SettingsChatContinuitySection.svelte';
 	import SettingsChatImageGenSection from './SettingsChatImageGenSection.svelte';
 	import { Pencil, Trash2, User } from '@lucide/svelte';
 	import { DialogUserOnboarding } from '$lib/components/app';
@@ -233,6 +234,8 @@
 	</div>
 
 	<SettingsChatMemorySection />
+
+	<SettingsChatContinuitySection />
 
 	<SettingsChatImageGenSection />
 

@@ -42,6 +42,7 @@ import type {
 	ChatUploadedFile,
 	// Database types
 	DatabaseConversation,
+	ConversationHandoff,
 	DatabaseProject,
 	DatabaseCharacter,
 	DatabaseMessage,
@@ -111,6 +112,7 @@ declare global {
 		ChatUploadedFile,
 		// Database types
 		DatabaseConversation,
+		ConversationHandoff,
 		DatabaseProject,
 		DatabaseCharacter,
 		DatabaseMessage,

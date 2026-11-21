@@ -12,6 +12,8 @@
 #
 #  Options:  --rebuild | --choose-backend | --backend X | --no-image   (passed to install.sh)
 #            --settings     change context size / GPU layers / KV cache / port, then stop
+#            --models-folder   choose where your TEXT models are (any folder, e.g. another disk)
+#            --image-folder    choose where your IMAGE models are
 #            --no-browser   do not open the browser
 # ============================================================================
 if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi
@@ -26,8 +28,10 @@ for a in "$@"; do
     case "$a" in
         --rebuild|--choose-backend|--backend|--backend=*|--no-image|--yes|-y) NEEDS_SETUP=1; PASS+=("$a") ;;
         --settings) "$SCRIPT_DIR/install.sh" --settings; exit $? ;;
+        --models-folder) . "$SCRIPT_DIR/installers/paths.sh"; knome_choose_folders "$SCRIPT_DIR" models; exit 0 ;;
+        --image-folder)  . "$SCRIPT_DIR/installers/paths.sh"; knome_choose_folders "$SCRIPT_DIR" image; exit 0 ;;
         --no-browser) export KNOME_NO_BROWSER=1 ;;
-        -h|--help) sed -n '2,16p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) PASS+=("$a") ;;   # values of --backend X
     esac
 done
@@ -49,8 +53,10 @@ if [ "$NEEDS_SETUP" = "1" ]; then
 fi
 
 # no model yet?
-if ! compgen -G "$SCRIPT_DIR/models/*.gguf" >/dev/null 2>&1 && ! compgen -G "$SCRIPT_DIR/models/*/*.gguf" >/dev/null 2>&1; then
-    printf '\n !! No text model found yet.\n    Put a .gguf model (and its mmproj file for vision) into:  %s/models/\n    Then run ./Knome-start.sh again.\n' "$SCRIPT_DIR"
+. "$SCRIPT_DIR/installers/paths.sh"; knome_load_paths "$SCRIPT_DIR"
+M="${KNOME_MODELS_DIR:-$SCRIPT_DIR/models}"
+if ! compgen -G "$M/*.gguf" >/dev/null 2>&1 && ! compgen -G "$M/*/*.gguf" >/dev/null 2>&1; then
+    printf '\n !! No text model found yet.\n    Put a .gguf model (and its mmproj file for vision) into:  %s/\n    or choose another folder:  ./Knome-start.sh --models-folder\n    Then run ./Knome-start.sh again.\n' "$M"
     exit 0
 fi
 

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Knome",
+  "version": "0.3.0",
+  "identifier": "dev.unicone.knome",
+  "build": { "frontendDist": "../ui" },
+  "app": { "windows": [], "security": { "csp": null } },
+  "bundle": { "active": false, "icon": ["icons/icon.png"] }
+}

@@ -33,6 +33,25 @@ export interface DatabaseConversation {
 	projectId?: string;
 	/** Character Card active when this chat was created, if any -- powers WhatsApp-mode's "all chats with this character" list. */
 	characterId?: string;
+	/** Set on a chat that carries on from an earlier one whose context was full (see continuityStore). */
+	continuedFromConversationId?: string;
+	/** What the earlier chat handed over: summary + last messages. Sent to the model with every request of this chat. */
+	handoff?: ConversationHandoff;
+}
+
+/** A compact copy of an earlier chat, so a new chat can continue it without the full history. */
+export interface ConversationHandoff {
+	/** rolling summary of everything so far (updated, never overwritten blindly) */
+	summary: string;
+	/** 1 for the first handoff, +1 every time this project is handed over again */
+	version: number;
+	fromId: string;
+	fromName: string;
+	/** the last few messages, word for word */
+	recent: { role: 'user' | 'assistant'; text: string }[];
+	createdAt: number;
+	/** context usage (%) when the handoff happened */
+	percent?: number;
 }
 
 /**

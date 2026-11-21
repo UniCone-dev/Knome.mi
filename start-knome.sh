@@ -21,7 +21,14 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-MODELS_DIR="$SCRIPT_DIR/models"
+# SCRIPT_DIR = the program (read-only inside an AppImage). DATA_DIR = everything that gets written:
+# memory, slots, settings, logs. Normal install: the same folder. AppImage: ~/.local/share/Knome.
+DATA_DIR="${KNOME_DATA_DIR:-$SCRIPT_DIR}"
+mkdir -p "$DATA_DIR/.knome-state"
+. "$SCRIPT_DIR/installers/paths.sh"
+knome_load_paths "$DATA_DIR"
+MODELS_DIR="${KNOME_MODELS_DIR:-$DATA_DIR/models}"
+IMAGE_MODELS_DIR="${KNOME_IMAGE_MODELS_DIR:-$DATA_DIR/image-models}"
 UNIT_NAMES=()
 UNIT_PATHS=()
 UNIT_IS_VISION=()
@@ -68,7 +75,7 @@ fi
 #   KNOME_PORT  8080
 #   KNOME_SYSTEM_TOOLS  0 | 1    1 = the AI may open apps, change settings, install apps ... (the UI asks before EVERY action)
 # Environment variables still win:  LLM_CTX=8192 LLM_NGL=20 LLM_PORT=8081 ./start-knome.sh
-[ -f "$SCRIPT_DIR/.knome-state/settings.env" ] && . "$SCRIPT_DIR/.knome-state/settings.env"
+[ -f "$DATA_DIR/.knome-state/settings.env" ] && . "$DATA_DIR/.knome-state/settings.env"
 NGL="${LLM_NGL:-${KNOME_NGL:-auto}}"
 CTX="${LLM_CTX:-${KNOME_CTX:-auto}}"
 KV="${KNOME_KV:-}"   # empty = llama.cpp default (set KNOME_KV=q8_0 or q4_0 yourself to save memory)
@@ -85,9 +92,11 @@ fi
 # binary if it changed (e.g. after editing the UI + npm run build) without
 # you having to remember a separate rebuild step. Incremental, so it's fast
 # (a couple seconds) when nothing actually changed.
-echo "Checking for UI/source changes to rebuild..."
+# (Skipped in the AppImage: it is read-only and already built.)
 BUILD_LOG="$(mktemp)"
-if cmake --build "$SCRIPT_DIR/llama.cpp/build" --target llama-server -j"$(nproc)" > "$BUILD_LOG" 2>&1; then
+if [ "${KNOME_APPIMAGE:-0}" = "1" ] || [ ! -f "$SCRIPT_DIR/llama.cpp/build/CMakeCache.txt" ]; then
+    rm -f "$BUILD_LOG"
+elif echo "Checking for UI/source changes to rebuild..." && cmake --build "$SCRIPT_DIR/llama.cpp/build" --target llama-server -j"$(nproc)" > "$BUILD_LOG" 2>&1; then
     rm -f "$BUILD_LOG"
 else
     echo "Warning: rebuild failed -- continuing with the existing binary. Build log:"
@@ -95,14 +104,14 @@ else
     rm -f "$BUILD_LOG"
 fi
 
-CORE_TOOLS_VENV="$SCRIPT_DIR/core-tools/venv/bin/python3"
+CORE_TOOLS_VENV="${KNOME_PYTHON:-$SCRIPT_DIR/core-tools/venv/bin/python3}"
 if [ ! -x "$CORE_TOOLS_VENV" ]; then
     echo "Error: core-tools venv not found at $CORE_TOOLS_VENV"
     echo "Run: ./install.sh (this creates the venv automatically)."
     exit 1
 fi
 
-mkdir -p "$SCRIPT_DIR/memory" "$SCRIPT_DIR/slots"
+mkdir -p "$DATA_DIR/memory" "$DATA_DIR/slots"
 
 # For core-tools' clear_context tool: it needs a model name to target in
 # router mode (single-model mode ignores this). Pick the first non-vision
@@ -137,7 +146,8 @@ MCP_SERVERS_JSON=$(cat <<JSON
       "args": ["$SCRIPT_DIR/core-tools/server.py"],
       "cwd": "$SCRIPT_DIR/core-tools",
       "env": {
-        "KNOME_ROOT": "$SCRIPT_DIR",
+        "KNOME_ROOT": "$DATA_DIR",
+        "PYTHONDONTWRITEBYTECODE": "1",
         "LLAMA_SERVER_URL": "http://127.0.0.1:$PORT",
         "TEXT_MODEL_NAME": "$TEXT_MODEL_NAME",
         "KNOME_SYSTEM_TOOLS": "$SYSTEM_TOOLS"
@@ -178,9 +188,12 @@ if [ -z "$SD_BIN" ]; then
 fi
 if [ -n "$SD_BIN" ] && [ -x "$SD_BIN" ]; then
     SD_PORT="${SD_PORT:-1234}"
-    IMG_DIR="$SCRIPT_DIR/image-models"
-    SD_VIEW="$SCRIPT_DIR/.knome-state/sd-models"
+    IMG_DIR="$IMAGE_MODELS_DIR"
     mkdir -p "$IMG_DIR"
+    # The view lives next to the image models (same disk -> hard links work). If that folder is read-only,
+    # it falls back to the state folder (and then to normal links, with a note).
+    SD_VIEW="$IMG_DIR/.knome-view"
+    mkdir -p "$SD_VIEW" 2>/dev/null && [ -w "$SD_VIEW" ] || SD_VIEW="$DATA_DIR/.knome-state/sd-models"
     # The image server only accepts real files that live inside its model folder (symlinks pointing
     # outside are refused), so the view uses HARD LINKS: same file on disk, no copy, no extra space.
     # (Hard links need the same disk; if that is not possible a normal link is used and a note is printed.)
@@ -201,7 +214,7 @@ if [ -n "$SD_BIN" ] && [ -x "$SD_BIN" ]; then
                 *)   cat="$(sd_category "$rel")" ;;
             esac
             sd_link "$f" "$cat"
-        done < <(find "$IMG_DIR" -type f \( -iname '*.safetensors' -o -iname '*.gguf' -o -iname '*.ckpt' -o -iname '*.sft' -o -iname '*.pth' -o -iname '*.pt' -o -iname '*.bin' \) 2>/dev/null)
+        done < <(find "$IMG_DIR" -path "$IMG_DIR/.knome-view" -prune -o -type f \( -iname '*.safetensors' -o -iname '*.gguf' -o -iname '*.ckpt' -o -iname '*.sft' -o -iname '*.pth' -o -iname '*.pt' -o -iname '*.bin' \) -print 2>/dev/null)
         # your text models are valid text encoders too (and mmproj files for vision encoders)
         while IFS= read -r f; do sd_link "$f" text_encoders; done < <(find "$MODELS_DIR" -maxdepth 2 -type f -iname '*.gguf' 2>/dev/null)
         # your own recipes (image-models/recipes/*.json)
@@ -214,20 +227,20 @@ if [ -n "$SD_BIN" ] && [ -x "$SD_BIN" ]; then
     rm -rf "$SD_VIEW"; mkdir -p "$SD_VIEW"
     SD_LINK_WARN=0
     sync_sd_view
-    [ "$SD_LINK_WARN" = "1" ] && echo "  Note: image-models/ and models/ are on different disks, so the image server may not see some files. Keep them inside Knome.mi/ on one disk."
+    [ "$SD_LINK_WARN" = "1" ] && echo "  Note: your models / image-models folders are on different disks, so the image server may not see some shared files (text encoders). Put such files straight into the image-models folder."
     echo "Starting image server on port $SD_PORT ..."
     # shellcheck disable=SC2086
     # Low-memory defaults (memory-mapped weights, tiled VAE). Replace with SD_ARGS="..." if you want.
     SD_ARGS="${SD_ARGS---mmap --vae-tiling}"
     # The image server is supervised: if it ever dies (e.g. the system ran out of memory) it comes back
     # by itself, so "Cannot reach the image server" fixes itself after a few seconds.
-    : > "$SCRIPT_DIR/image-server.log" 2>/dev/null || true
+    : > "$DATA_DIR/image-server.log" 2>/dev/null || true
     (
         while true; do
             # shellcheck disable=SC2086
             "$SD_BIN" --model-dir "$SD_VIEW" --listen-ip 127.0.0.1 --listen-port "$SD_PORT" ${SD_ARGS:-} \
-                >> "$SCRIPT_DIR/image-server.log" 2>&1
-            echo "[knome] image server exited (code $?), restarting in 3 s" >> "$SCRIPT_DIR/image-server.log"
+                >> "$DATA_DIR/image-server.log" 2>&1
+            echo "[knome] image server exited (code $?), restarting in 3 s" >> "$DATA_DIR/image-server.log"
             sleep 3
         done
     ) &
@@ -254,11 +267,12 @@ if [ -n "${SD_PID:-}" ]; then
     printf '%s  Image server:%s   http://127.0.0.1:%s   (turn on in Settings > Profile > Image & video)\n' "$BOLD" "$RESET" "${SD_PORT:-1234}"
 fi
 printf '%s  Text models:%s     %s\n' "$BOLD" "$RESET" "$MODELS_DIR"
-printf '%s  Image models:%s    %s\n' "$BOLD" "$RESET" "$SCRIPT_DIR/image-models"
+printf '%s  Image models:%s    %s\n' "$BOLD" "$RESET" "$IMAGE_MODELS_DIR"
 printf '%s  Stop:%s            Ctrl+C\n\n' "$DIM" "$RESET"
 
 echo "Knome is starting, please wait..."
-[ "${KNOME_NO_BROWSER:-0}" = "1" ] || ( sleep 3 && xdg-open "http://127.0.0.1:$PORT" >/dev/null 2>&1 & )
+. "$SCRIPT_DIR/installers/window.sh"
+knome_open_window "http://127.0.0.1:$PORT" "$DATA_DIR" "$$"
 
 # "auto" = leave the option out, so llama.cpp fits layers / context into the free memory by itself
 # (an explicit -c 131072 -ngl 999 cannot be fitted and fails to load on small GPUs).
@@ -270,7 +284,7 @@ COMMON_ARGS+=(
     --host 127.0.0.1 --port "$PORT"
     --tools all --jinja
     -ag
-    --slot-save-path "$SCRIPT_DIR/slots"
+    --slot-save-path "$DATA_DIR/slots"
     --mcp-servers-json "$MCP_SERVERS_JSON"
 )
 

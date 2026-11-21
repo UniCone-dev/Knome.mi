@@ -71,6 +71,13 @@ ask_settings() {   # ask_settings <backend>
             "No - chat, tools and memory only (recommended)" "Yes - allow system control (each action still asks you)"
         case "$CHOICE" in 1) systools=0 ;; 2) systools=1 ;; esac
 
+        choose "Where are your models?" 1 \
+            "Inside the Knome folder (models/ and image-models/)  (default)" "I will pick folders (another disk or folder)"
+        if [ "$CHOICE" = "2" ]; then
+            . "$SCRIPT_DIR/installers/paths.sh" 2>/dev/null || . "$(dirname "${BASH_SOURCE[0]}")/paths.sh"
+            knome_choose_folders "$(dirname "$STATE_DIR")" both
+        fi
+
         read -r -p "    Web port [$port]: " _p
         case "${_p:-$port}" in ''|*[!0-9]*) ;; *) port="${_p:-$port}" ;; esac
     else

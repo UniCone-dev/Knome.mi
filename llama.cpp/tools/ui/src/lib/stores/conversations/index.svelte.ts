@@ -296,6 +296,38 @@ class ConversationsStore implements ConversationsPreferencesHost {
 	}
 
 	/**
+	 * Opens a NEW chat that carries on from `from` with a handoff (summary + last messages).
+	 * The earlier chat is not touched. Character, project, tools and thinking settings are copied.
+	 */
+	async createContinuation(from: DatabaseConversation, handoff: ConversationHandoff): Promise<string> {
+		const base = from.name.replace(/\s*\(continued(?: (\d+))?\)$/i, '');
+		const m = /\(continued(?: (\d+))?\)$/i.exec(from.name);
+		const n = m ? (m[1] ? Number(m[1]) + 1 : 2) : 1;
+		const name = n === 1 ? `${base} (continued)` : `${base} (continued ${n})`;
+		const conversation = await DatabaseService.createConversation(name, {
+			characterId: from.characterId,
+			cwd: from.cwd,
+			projectId: from.projectId,
+			reasoningEffort: from.reasoningEffort,
+			thinkingEnabled: from.thinkingEnabled,
+			disabledTools: from.disabledTools,
+			disabledToolCategories: from.disabledToolCategories,
+			continuedFromConversationId: from.id,
+			handoff
+		});
+
+		this.conversations = [conversation, ...this.conversations];
+		this.activeConversation = conversation;
+		this.activeMessages = [];
+
+		if (from.characterId) charactersStore.setActiveCharacter(from.characterId);
+
+		await goto(RouterService.chat(conversation.id));
+
+		return conversation.id;
+	}
+
+	/**
 	 * Deletes all conversations and their messages
 	 */
 	async deleteAll(): Promise<void> {

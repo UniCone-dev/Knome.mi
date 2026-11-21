@@ -6,6 +6,8 @@
 	import MessengerContactInfo from './MessengerContactInfo.svelte';
 	import MessengerEmptyChat from './MessengerEmptyChat.svelte';
 	import ChatCharacterHeader from './ChatCharacterHeader.svelte';
+	import ChatContinuity from './ChatContinuity.svelte';
+	import ChatContinuityCard from './ChatContinuityCard.svelte';
 	import { LivingDriver, LivingStage } from '$lib/components/app/characters';
 	import { livingStore } from '$lib/stores/living.svelte';
 	import { page } from '$app/state';
@@ -332,6 +334,8 @@
 			{/if}
 		{/if}
 
+		<ChatContinuityCard />
+
 		{#if !isEmpty}
 			<ChatMessages
 				messages={conversationsStore.activeMessages}
@@ -366,6 +370,8 @@
 			{/if}
 
 			<ChatScreenServerError />
+
+			<ChatContinuity />
 
 			{#if page.params.id}
 				<ChatScreenStreamResumeStatus />

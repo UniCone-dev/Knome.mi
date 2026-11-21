@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Knome
+GenericName=Local AI
+Comment=Your local AI - text, tools, memory and images
+Exec=AppRun
+Icon=knome
+Terminal=false
+Categories=Utility;Development;
+StartupNotify=true

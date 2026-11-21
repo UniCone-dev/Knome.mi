@@ -1,0 +1,18 @@
+[package]
+name = "knome-app"
+version = "0.3.0"
+description = "Knome - your local AI in its own window"
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+tauri = { version = "2", features = [] }
+libc = "0.2"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
